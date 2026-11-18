@@ -3,6 +3,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#efe3c8">
 <title>بنك الحظ</title>
+<link rel="icon" href="data:,">
 <link rel="stylesheet" href="assets/fonts.css">
 <script src="assets/img-map.js"></script>
 <style id="css-classic">
@@ -896,15 +897,18 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 </style>
 <style id="css-dc">
 /* Discord "in the call" lobby bar (participants from the Embedded App SDK) */
-.dcppl{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:70;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:94vw;padding:5px 12px;border-radius:999px;background:rgba(18,18,24,.74);color:#fff;font-size:12px;line-height:1.2;box-shadow:0 6px 20px rgba(0,0,0,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.dcppl{position:fixed;left:50%;bottom:10px;transform:translateX(-50%);z-index:70;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;max-width:94vw;padding:5px 12px;border-radius:999px;background:rgba(18,18,24,.74);color:#fff;font-size:12px;line-height:1.2;box-shadow:0 6px 20px rgba(0,0,0,.35);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);pointer-events:none}
 .dcppl[hidden]{display:none}
 .dcppl b{font-weight:800;opacity:.9;margin-inline-end:2px}
 .dcppl .pc{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.13);font-weight:600}
 .dcppl .pc .dot{width:7px;height:7px;border-radius:50%;background:#3ba55d;flex:0 0 auto}
+/* Discord avatars on player tokens (initial stays underneath as a fallback) */
+.tok,.token,.tk u{position:relative}
+.tok img.tokav,.token img.tokav,.tk u img.tokav{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 </style>
 </head><body>
 <div id="dcppl" class="dcppl" hidden></div>
-<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="mu" class="iconbtn" onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span><button id="lg" class="s" onclick="toggleLang()">EN</button><button id="emote-toggle" class="s" onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="ui" class="s" onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button></div></header>
+<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="mu" class="iconbtn" data-onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span><button id="lg" class="s" data-onclick="toggleLang()">EN</button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button></div></header>
 <div id="toast"></div><div id="app"><p>جاري الاتصال…</p></div>
 <script>
 
@@ -1026,7 +1030,7 @@ function applyCfg(c){
  FL={};WT={};c.S.forEach((r,i)=>{if(r[4])FL[i]=r[4];if(r[5])WT[i]=r[5]})}
 applyCfg(DEFAULT_CFG);
 // ===== state helpers =====
-let G=null,LAST=null,me=null,ref=null,local=false,busy=false,err='',PRES=null;
+let G=null,LAST=null,me=null,ref=null,local=false,busy=false,err='',PRES=null,SNAPPED=false;
 const now=()=>Date.now()+(window.SVOFF||0);
 const here=id=>!PRES||!!PRES[id];
 function driverId(s){if(!s)return null;const h=s.P.find(x=>!x.bot&&here(x.id))||s.P.find(x=>!x.bot);return h&&h.id}
@@ -1317,11 +1321,11 @@ function kickPlayer(s,i){
 function act(k,arg){
  if(busy)return;const s=G?JSON.parse(JSON.stringify(G)):fresh();
   if(k==='join'){
-   const n=(arg||'').trim().slice(0,14);if(!n||s.P.length>=6)return;
+   const n=Array.from((arg||'').trim()).slice(0,14).join('');if(!n||s.P.length>=6)return;
    if(!local&&!me)me='g'+Math.random().toString(36).slice(2,8);
    if(local&&!me)me='l'+s.P.length;
    const id=me;if(s.P.some(x=>x.id===id))return;
-   s.P.push({id,n,c:freeColor(s),pos:0,m:P.startCash,jail:0,out:false})}
+   s.P.push({id,n,c:freeColor(s),pos:0,m:P.startCash,jail:0,out:false,av:(window.DISCORD_USER&&window.DISCORD_USER.avatar)||null})}
   else if(k==='bot'){if(!local&&hostId(s)!==me)return;if(s.P.length>=6)return;const nb=s.P.filter(x=>x.bot).length+1;s.P.push({id:'bot'+Date.now()%100000+s.P.length,n:tl('bot_name',nb),c:freeColor(s),pos:0,m:P.startCash,jail:0,out:false,bot:true})}
   else if(k==='kick'){if(MOVING)return;if(!local&&hostId(s)!==me)return;const i=+arg;if(!s.P[i]||s.P[i].id===me)return;kickPlayer(s,i)}
  else if(k==='start'){if(s.P.length<2||(!local&&hostId(s)!==me))return;s.st=1;s.t=0;s.dir=1;s.cfg=CFGJSON;s.dk='';s.host=hostId(s);s.P.forEach(p=>{p.m=P.startCash});s.rc=0;roStart(s);L(s,'gamestart')}
@@ -1351,7 +1355,7 @@ function act(k,arg){
    else return}
  if(s.st&&s.w==null&&s.ph!=='ro')arm(s);
  s.v=(s.v||0)+1;
- save(s)}
+ return save(s)}
 async function save(s){
  G=s;render();if(!ref)return;busy=true;
  try{await ref.set(s);err=''}catch(e){err=(e&&e.message==='conflict')?tl('err_conflict'):tl('err_save',(e&&e.message||''));if(LAST)G=LAST}
@@ -1395,11 +1399,95 @@ function botTick(){
  if(!k)return;
  bt=later(()=>{bt=null;if(MOVING||busy||!G)return;act(k,arg)},ms)}
 
+// ===== click shim: Discord's CSP blocks inline onclick attributes, so run data-onclick =====
+function parseClickArgs(str){
+ const out=[];let depth=0,cur='',q='';
+ for(let i=0;i<str.length;i++){
+  const ch=str[i];
+  if(q){cur+=ch;if(ch===q)q='';continue}
+  if(ch==="'"||ch==='"'){q=ch;cur+=ch;continue}
+  if(ch==='('||ch==='['){depth++;cur+=ch;continue}
+  if(ch===')'||ch===']'){depth--;cur+=ch;continue}
+  if(ch===','&&depth===0){out.push(cur);cur='';continue}
+  cur+=ch;
+ }
+ if(cur.trim()!=='')out.push(cur);
+ return out.map(a=>{
+  a=a.trim();
+  if(a==="document.getElementById('nm').value"){const el=document.getElementById('nm');return el?el.value:''}
+  if((a[0]==="'"&&a[a.length-1]==="'")||(a[0]==='"'&&a[a.length-1]==='"'))return a.slice(1,-1);
+  if(/^-?\d+(\.\d+)?$/.test(a))return Number(a);
+  if(a==='true')return true;if(a==='false')return false;if(a==='null')return null;
+  return undefined;
+ });
+}
+function runClickAttr(el,ev,attr){
+ const code=el.getAttribute(attr||'data-onclick');if(!code)return;
+ const stmts=code.split(';');
+ for(const st of stmts){
+  const s=st.trim();if(!s)continue;
+  if(s==='render()'){render();continue}
+  if(s==='TD=null'){TD=null;continue}
+  if(s==='event.stopPropagation()'){if(ev&&ev.stopPropagation)ev.stopPropagation();continue}
+  if(s==='this.select()'){try{el.select()}catch(e){}continue}
+  if(s==='TD.gm=+this.value||0'){if(TD){TD.gm=+el.value||0;if(typeof tdRefresh==='function')tdRefresh()}continue}
+  if(s==='TD.wm=+this.value||0'){if(TD){TD.wm=+el.value||0;if(typeof tdRefresh==='function')tdRefresh()}continue}
+  const m=/^([A-Za-z_$][\w$]*)\(([\s\S]*)\)$/.exec(s);
+  if(!m)continue;
+  const fn=m[1],args=parseClickArgs(m[2]);
+  const f=window[fn];
+  if(typeof f==='function'){try{f.apply(null,args)}catch(e){console.warn(e)}}
+ }
+}
+document.addEventListener('click',function(ev){
+ const el=ev.target&&ev.target.closest?ev.target.closest('[data-onclick]'):null;
+ if(el)runClickAttr(el,ev,'data-onclick');
+});
+document.addEventListener('input',function(ev){
+ const el=ev.target&&ev.target.closest?ev.target.closest('[data-oninput]'):null;
+ if(el)runClickAttr(el,ev,'data-oninput');
+});
+// inline onerror attributes are blocked by the same CSP — hide broken images here
+document.addEventListener('error',function(ev){
+ const t=ev.target;if(t&&t.tagName==='IMG')t.style.display='none';
+},true);
+// ===== auto-join as the Discord user (name + avatar from the Embedded App SDK) =====
+var AUTODONE=false,AUTOJOINING=false;
+function maybeAutoJoin(){
+ if(AUTODONE||AUTOJOINING)return;
+ if(!window.DISCORD_MODE||!window.DISCORD_USER)return;
+ if(!ref||!SNAPPED)return;
+ if(G&&G.P&&G.P.some(x=>x.id===me)){AUTODONE=true;return}
+ if(G&&G.P&&G.P.length>=6){AUTODONE=true;return}
+ AUTOJOINING=true;
+ let pr=null;
+ try{pr=act('join',window.DISCORD_USER.name)}catch(e){}
+ const settle=()=>{
+  AUTOJOINING=false;
+  if(G&&G.P&&G.P.some(x=>x.id===me)){AUTODONE=true;return}
+  if(G&&G.P&&G.P.length>=6){AUTODONE=true;return}
+  setTimeout(maybeAutoJoin,600);
+ };
+ // act() returns the save promise; keep AUTOJOINING set until the relay confirmed the join
+ if(pr&&typeof pr.then==='function')pr.then(settle,settle);else settle();
+}
+window.addEventListener('discord-ready',function(){render()});
+window.addEventListener('discord-failed',function(){render()});
+function joinDiscord(){if(window.DISCORD_USER)act('join',window.DISCORD_USER.name)}
+function discordJoinHTML(){
+ if(!window.DISCORD_MODE||window.DISCORD_FAILED)return null;
+ const u=window.DISCORD_USER;
+ if(!u)return '<div style="margin:10px 0;padding:10px;border:2px dashed #888;border-radius:14px;text-align:center"><small>'+(LANG==='ar'?'جاري الاتصال بديسكورد…':'Connecting to Discord…')+'</small></div>';
+ return '<div style="margin:10px 0;padding:8px 10px;border:2px dashed #888;border-radius:14px;display:flex;align-items:center;gap:8px">'+
+  (u.avatar?'<img src="'+esc(u.avatar)+'" alt="" referrerpolicy="no-referrer" onerror="this.remove()" style="width:32px;height:32px;border-radius:50%;border:2px solid #fff">':'')+
+  '<span style="font-weight:700">'+esc(u.name)+'</span>'+
+  '<button class="primary" style="margin-inline-start:auto" data-onclick="joinDiscord()">'+tl('b_join')+'</button></div>';
+}
 // ===== theme system (shared) =====
 let UI='classic';
 const THEMES={};
 var TD=null;
-function render(){ (THEMES[UI]||THEMES.classic).render(); }
+function render(){ (THEMES[UI]||THEMES.classic).render(); maybeAutoJoin(); }
 function fmtLog(e,h){ var f=(THEMES[UI]||THEMES.classic).fmtLog; return f?f(e,h):''; }
 function gone(p){ var g=(THEMES[UI]||THEMES.classic).gone; return g?g(p):false; }
 function themeLabel(t){ return t==='classic'?'Classic':t==='midnight'?'Midnight':'Atlas'; }
@@ -1450,8 +1538,8 @@ const iconOf=i=>FL[i]||IC[S[i][1]]||'';
 const ini=n=>Array.from(String(n).replace(/^🤖\s*/,'🤖'))[0]||'?';
 const grpMembers=k=>S[k][1]==='p'?GRP[S[k][3]]:S[k][1]==='r'?RAILS:S[k][1]==='u'?UTILS:[k];
 const posNow=(s,i)=>DP[i]!==undefined?DP[i]:s.P[i].pos;
-const tok=(p)=>`<u class="tok" style="background:${PC[p.c]}">${esc(ini(p.n))}</u>`;
-function grpChips(s,k){return grpMembers(k).map(x=>{const o=s.O[x],ow=o!=null?s.P[o]:null;return `<span class="gmem${x===k?' me':''}${mg(s,x)?' mgd':''}" style="--oc:${ow?PC[ow.c]:'#999'};--gc:${S[x][1]==='p'?GC[S[x][3]]:'#888'}" onclick="pick(${x})">${ow?tok(ow):'🏷️'} ${esc(sn(x))}${mg(s,x)?' 🔒':''}</span>`}).join('')}
+const tok=(p)=>`<u class="tok" style="background:${PC[p.c]}">${esc(ini(p.n))}${p.av?`<img class="tokav" src="${esc(p.av)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</u>`;
+function grpChips(s,k){return grpMembers(k).map(x=>{const o=s.O[x],ow=o!=null?s.P[o]:null;return `<span class="gmem${x===k?' me':''}${mg(s,x)?' mgd':''}" style="--oc:${ow?PC[ow.c]:'#999'};--gc:${S[x][1]==='p'?GC[S[x][3]]:'#888'}" data-onclick="pick(${x})">${ow?tok(ow):'🏷️'} ${esc(sn(x))}${mg(s,x)?' 🔒':''}</span>`}).join('')}
 function mgInfo(k){return tl('mginfo',mval(k),ucost(k))}
 function myIdx(s){return s.P.findIndex(p=>p.id===me&&!p.bot)}
 // ===== board =====
@@ -1461,33 +1549,33 @@ function board(s){
   const q=S[i],[r,c]=posOf(i),o=s.O[i],by=BUY(q),ow=by&&o!=null?s.P[o]:null,oc=ow?PC[ow.c]:'',hs=hh(s,i),m=ow&&mg(s,i),
    full=ow&&q[1]==='p'&&GRP[q[3]].every(x=>s.O[x]===o),
    here=s.P.map((p,k)=>k).filter(k=>!s.P[k].out&&posNow(s,k)===i),curHere=here.includes(s.t)&&s.w==null,
-   tk=here.map(k=>`<u class="${k===s.t&&s.w==null?'cur':''}" style="background:${PC[s.P[k].c]};animation-delay:-${(Date.now()%1000)/1000}s">${esc(ini(s.P[k].n))}</u>`).join(''),
+   tk=here.map(k=>`<u class="${k===s.t&&s.w==null?'cur':''}" style="background:${PC[s.P[k].c]};animation-delay:-${(Date.now()%1000)/1000}s">${esc(ini(s.P[k].n))}${s.P[k].av?`<img class="tokav" src="${esc(s.P[k].av)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</u>`).join(''),
    pop=fx('pop')&&fx('pop').has(i),nw=fx('nw')&&fx('nw').has(i),vv=(s.V&&s.V[i])||0,hl=HL&&HL.i===i&&Date.now()<HL.t+3200;
-  h+=`<div class="sq${pop?' pop':''}${nw?' nw':''}${by?(ow?' own':' free'):''}${m?' mg':''}${sg&&sg.has(i)?' sg':''}${here.length?(curHere?' here':' occ'):''}${hl?' hl':''}" data-i="${i}" onclick="pick(${i})" style="grid-area:${r}/${c};${ow?`--oc:${oc};`:''}${here.length?`--hc:${PC[s.P[curHere?s.t:here[0]].c]};`:''}${q[1]==='p'?`--gc:${GC[q[3]]};`:''}${hl?ad(HL.t):(pop||nw)?ad(FX.ls):''}">${IMG[i]?`<img class="ph" src="${esc(IMG[i])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}${q[1]==='p'?`<i class="gb"></i>`:''}${ow?`<em class="ob" style="background:${oc}">${esc(ini(ow.n))}</em>`:by?'<em class="fr">🏷️</em>':''}${hs?`<em class="hs">${hs>=5?'🏨':'🏠'.repeat(hs)}</em>`:''}<b>${iconOf(i)}</b><span>${esc(sn(i))}</span>${by?(ow?`<small class="rt" style="background:${oc}">${m?'🔒':(full?'⭐':'')+(q[1]==='u'?'≈':'')+rentOf(s,i,7)+(vv?'📈':'')}</small>`:`<small>${q[2]}</small>`):q[2]?`<small>${q[2]}</small>`:''}<div class="tk">${tk}</div></div>`}
+  h+=`<div class="sq${pop?' pop':''}${nw?' nw':''}${by?(ow?' own':' free'):''}${m?' mg':''}${sg&&sg.has(i)?' sg':''}${here.length?(curHere?' here':' occ'):''}${hl?' hl':''}" data-i="${i}" data-onclick="pick(${i})" style="grid-area:${r}/${c};${ow?`--oc:${oc};`:''}${here.length?`--hc:${PC[s.P[curHere?s.t:here[0]].c]};`:''}${q[1]==='p'?`--gc:${GC[q[3]]};`:''}${hl?ad(HL.t):(pop||nw)?ad(FX.ls):''}">${IMG[i]?`<img class="ph" src="${esc(IMG[i])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}${q[1]==='p'?`<i class="gb"></i>`:''}${ow?`<em class="ob" style="background:${oc}">${esc(ini(ow.n))}</em>`:by?'<em class="fr">🏷️</em>':''}${hs?`<em class="hs">${hs>=5?'🏨':'🏠'.repeat(hs)}</em>`:''}<b>${iconOf(i)}</b><span>${esc(sn(i))}</span>${by?(ow?`<small class="rt" style="background:${oc}">${m?'🔒':(full?'⭐':'')+(q[1]==='u'?'≈':'')+rentOf(s,i,7)+(vv?'📈':'')}</small>`:`<small>${q[2]}</small>`):q[2]?`<small>${q[2]}</small>`:''}<div class="tk">${tk}</div></div>`}
  h+=`<div class="mid"><div class="t" style="animation-delay:-${(Date.now()%2500)/1000}s">${tl('title')}</div>${pcard(s)}<div class="dice${fxr()?' roll':''}"${fxr()?` style="${ad(FX.rs)}"`:''}>${D[s.d[0]-1]}${D[s.d[1]-1]}</div><div class="log">${s.log.map(e=>fmtLog(e,true)).join('<br>')}</div></div>`;
  return h}
 function strip(s){
  return '<div class="strip">'+s.P.map((p,i)=>{
   if(p.out)return `<span class="pch out">💀 ${esc(p.n)}</span>`;
   const pos=posNow(s,i),w=worth(s,i),isT=i===s.t&&s.w==null;
-  return `<span class="pch${isT?' turn':''}" style="--oc:${PC[p.c]}" onclick="pick(${pos})">${tok(p)}<b>${esc(p.n)}</b>${isT&&s.dl?' <span class="cd"></span>':''}<small>📍 ${iconOf(pos)} ${esc(sn(pos))} · 💎 ${w.total}</small></span>`}).join('')+'</div>'}
+  return `<span class="pch${isT?' turn':''}" style="--oc:${PC[p.c]}" data-onclick="pick(${pos})">${tok(p)}<b>${esc(p.n)}</b>${isT&&s.dl?' <span class="cd"></span>':''}<small>📍 ${iconOf(pos)} ${esc(sn(pos))} · 💎 ${w.total}</small></span>`}).join('')+'</div>'}
 function pcard(s){
  const q=S[CARD],by=BUY(q),o=by?s.O[CARD]:undefined,ow=o!=null?s.P[o]:null;let d='';
  if(by)d=ow?`<span class="ob2" style="background:${PC[ow.c]}">${esc(ini(ow.n))}</span> ${esc(ow.n)} — ${mg(s,CARD)?tl('mortgaged'):tl('rent_n',rentOf(s,CARD,7))}${hh(s,CARD)?' · '+(hh(s,CARD)>=5?'🏨':'🏠'.repeat(hh(s,CARD))):''}${(s.V&&s.V[CARD])?' 📈×'+s.V[CARD]:''}`:tl('forsale',q[2]);
- return `<div class="pcard" onclick="pick(${CARD})">${IMG[CARD]?`<img src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><div>${iconOf(CARD)} ${esc(sn(CARD))}</div><div class="pd">${d}</div></div></div>`}
+ return `<div class="pcard" data-onclick="pick(${CARD})">${IMG[CARD]?`<img src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><div>${iconOf(CARD)} ${esc(sn(CARD))}</div><div class="pd">${d}</div></div></div>`}
 let HL=null;
-const lnk=(k,t)=>`<span class="lnk" onclick="event.stopPropagation();pick(${k})">${t}</span>`;
+const lnk=(k,t)=>`<span class="lnk" data-onclick="event.stopPropagation();pick(${k})">${t}</span>`;
 // clicking ANY land name / picture anywhere flashes that square on the board (and scrolls it into view if needed)
 function pick(i){CARD=i;HL={i,t:Date.now()};sfx('tap');render();focusSq(i)}
 function focusSq(i){if(!document.querySelector)return;const e=document.querySelector('.sq[data-i="'+i+'"]');if(!e||!e.scrollIntoView)return;
  const r=e.getBoundingClientRect(),c=document.querySelector('.ctl'),lim=c&&innerWidth<900?c.getBoundingClientRect().top:innerHeight;
  if(r.top<50||r.bottom>lim-10)e.scrollIntoView({block:'center',behavior:'smooth'})}
-const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
+const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
 function sqPanel(s){
  const q=S[CARD];if(!BUY(q))return '';
  const o=s.O[CARD],ow=o!=null?s.P[o]:null,i=s.t,p=s.P[i],R=RN[CARD];
   const mineP=ow&&!ow.bot&&(local||ow.id===me),can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===i));
-  let h=`<div class="panel">`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
+  let h=`<div class="panel">`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
   if(q[1]==='p')h+=tl('rentline',R.r0,R.rs,R.r[1],R.r[2],R.r[3],R.r[4],R.r[5])+'<br>'+tl('housecost',R.hc,sval(CARD));
   else if(q[1]==='r')h+=tl('railrent',P.rail.join(' ← '));
   else h+=tl('utilrent',P.util[0],P.util[1]);
@@ -1506,14 +1594,14 @@ const netVal=(s,m,list)=>m+list.reduce((a,k)=>a+S[k][2]-(mg(s,k)?ucost(k):0),0);
 const cdHdr=()=>'<div class="ctlh">⏱️ <span class="cd"></span></div>';
 function aucUI(s){
  const a=s.au,q=S[a.sq],c=s.P[a.cur],mineT=!c.bot&&(local||c.id===me),mi=local?-1:myIdx(s);
-  return cdHdr()+`<b>${tl('auc_title',lnk(a.sq,iconOf(a.sq)+' '+esc(sn(a.sq))))}</b><br><small>${tl('auc_info',q[2],mgInfo(a.sq),a.bid?tl('bid_from',a.bid,esc(s.P[a.bidder].n)):tl('nobid'))}</small><br>`+(mineT?`${tl('yourbid',esc(c.n))}<br>`+P.bids.map(v=>Bt('abid','+'+v,'',v,c.m<a.bid+v)).join('')+Bt('apass',tl('b_pass'),'s'):tl('waiting',esc(c.n)))+((local||mi>=0&&!s.P[mi].out)?`<br><button class="s" onclick="openTrade()">${tl('b_tradeauc')}</button>`:'')+mortRow(s,local?a.cur:mi)}
+  return cdHdr()+`<b>${tl('auc_title',lnk(a.sq,iconOf(a.sq)+' '+esc(sn(a.sq))))}</b><br><small>${tl('auc_info',q[2],mgInfo(a.sq),a.bid?tl('bid_from',a.bid,esc(s.P[a.bidder].n)):tl('nobid'))}</small><br>`+(mineT?`${tl('yourbid',esc(c.n))}<br>`+P.bids.map(v=>Bt('abid','+'+v,'',v,c.m<a.bid+v)).join('')+Bt('apass',tl('b_pass'),'s'):tl('waiting',esc(c.n)))+((local||mi>=0&&!s.P[mi].out)?`<br><button class="s" data-onclick="openTrade()">${tl('b_tradeauc')}</button>`:'')+mortRow(s,local?a.cur:mi)}
 function trUI(s){
  const t=s.tr,A=s.P[t.from],B=s.P[t.to],toMe=!B.bot&&(local||B.id===me),fromMe=!A.bot&&(local||A.id===me),anyMg=[...t.gp,...t.wp].some(k=>mg(s,k));
   return cdHdr()+`<b>${tl('offer_title')}</b><div class="pd" style="color:var(--tx)">${tl('gives',esc(A.n),money(s,t.gm,t.gp))} <small>${tl('netval',netVal(s,t.gm,t.gp))}</small><br>${tl('gives',esc(B.n),money(s,t.wm,t.wp))} <small>${tl('netval',netVal(s,t.wm,t.wp))}</small>${taxLine(s,t)}${anyMg?'<br>'+tl('mgwarn'):''}</div>`+(toMe?Bt('tacc',tl('b_accept'),'',undefined,!validTrade(s,t))+Bt('trej',tl('b_reject'),'s'):fromMe?tl('awaiting',esc(B.n))+' '+Bt('tcancel',tl('b_cancel_offer'),'s'):tl('thinking',esc(B.n)))}
 function mortRow(s,i){
  if(i==null||i<0||!s.P[i]||s.P[i].out)return '';
  const l=Object.keys(s.O).map(Number).filter(k=>s.O[k]===i&&!mg(s,k)&&canMort(s,k));
-  return `<div class="pd">${tl('mortrow',s.P[i].m)}</div>`+(l.length?`<div class="chips">${l.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')}</div>`:`<small>${tl('nomort')}</small>`)}
+  return `<div class="pd">${tl('mortrow',s.P[i].m)}</div>`+(l.length?`<div class="chips">${l.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')}</div>`:`<small>${tl('nomort')}</small>`)}
 function taxLine(s,t){const x=tradeTax(s,t);return `<br>${tl('taxline',Math.round(x.pct*100))}${x.tax?tl('taxpay',x.tax,esc(s.P[x.who].n)):tl('taxnone')}`}
 
 function proposer(s){return local?(s.au?s.au.cur:s.t):myIdx(s)}
@@ -1535,10 +1623,10 @@ function tdRefresh(){
 function tradeUI(s){
  const i=proposer(s),A=s.P[i],oth=s.P.map((p,k)=>k).filter(k=>k!==i&&!s.P[k].out);
  const dt=TD.to>=0?{from:i,to:TD.to,gm:Math.max(0,Math.floor(TD.gm||0)),wm:Math.max(0,Math.floor(TD.wm||0)),gp:TD.gp,wp:TD.wp}:null,ok=dt&&validTrade(s,dt);
- const lst=(idx,side)=>S.map((q,k)=>k).filter(k=>s.O[k]===idx&&!grpH(s,k)).map(k=>`<span class="chip${TD[side].includes(k)?' sel':''}" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="tdTog('${side}',${k})">${iconOf(k)} ${esc(sn(k))} <span onclick="event.stopPropagation();pick(${k})">🔍</span><br><small>${mg(s,k)?tl('mgcost',ucost(k)):tl('mgget',mval(k))}</small></span>`).join('')||`<small>${tl('none')}</small>`;
-  let h=`<b>${tl('tr_title')}</b><br>${tl('with_who')} `+oth.map(k=>`<button class="${TD.to===k?'':'s'}" onclick="tdTo(${k})">${esc(s.P[k].n)}</button>`).join('');
-  if(TD.to>=0)h+=`<div class="tcol"><b>${tl('yougive')}</b> 💰<input id="tgm" type="number" min="0" max="${A.m}" value="${TD.gm}" oninput="TD.gm=+this.value||0;tdRefresh()"><div class="chips">${lst(i,'gp')}</div></div><div class="tcol"><b>${tl('youwant')}</b> 💰<input id="twm" type="number" min="0" value="${TD.wm}" oninput="TD.wm=+this.value||0;tdRefresh()"><div class="chips">${lst(TD.to,'wp')}</div></div><div class="pd" id="tinfo">${tl('netline',netVal(s,TD.gm,TD.gp),netVal(s,TD.wm,TD.wp))} <small>${tl('netnote')}</small>${taxLine(s,dt)}${ok?'':'<br>'+tl('invalid_trade')}</div><button id="tsend" ${ok?'':'disabled'} onclick="tdSend()">${tl('b_send')}</button>`;
-  return h+`<button class="s" onclick="TD=null;render()">${tl('b_cancel')}</button>`}
+ const lst=(idx,side)=>S.map((q,k)=>k).filter(k=>s.O[k]===idx&&!grpH(s,k)).map(k=>`<span class="chip${TD[side].includes(k)?' sel':''}" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="tdTog('${side}',${k})">${iconOf(k)} ${esc(sn(k))} <span data-onclick="event.stopPropagation();pick(${k})">🔍</span><br><small>${mg(s,k)?tl('mgcost',ucost(k)):tl('mgget',mval(k))}</small></span>`).join('')||`<small>${tl('none')}</small>`;
+  let h=`<b>${tl('tr_title')}</b><br>${tl('with_who')} `+oth.map(k=>`<button class="${TD.to===k?'':'s'}" data-onclick="tdTo(${k})">${esc(s.P[k].n)}</button>`).join('');
+  if(TD.to>=0)h+=`<div class="tcol"><b>${tl('yougive')}</b> 💰<input id="tgm" type="number" min="0" max="${A.m}" value="${TD.gm}" data-oninput="TD.gm=+this.value||0;tdRefresh()"><div class="chips">${lst(i,'gp')}</div></div><div class="tcol"><b>${tl('youwant')}</b> 💰<input id="twm" type="number" min="0" value="${TD.wm}" data-oninput="TD.wm=+this.value||0;tdRefresh()"><div class="chips">${lst(TD.to,'wp')}</div></div><div class="pd" id="tinfo">${tl('netline',netVal(s,TD.gm,TD.gp),netVal(s,TD.wm,TD.wp))} <small>${tl('netnote')}</small>${taxLine(s,dt)}${ok?'':'<br>'+tl('invalid_trade')}</div><button id="tsend" ${ok?'':'disabled'} data-onclick="tdSend()">${tl('b_send')}</button>`;
+  return h+`<button class="s" data-onclick="TD=null;render()">${tl('b_cancel')}</button>`}
 function debtPanel(s){
   const d=s.debt,p=s.P[d.i],mine=local||p.id===me;
   const need=Math.max(0,Math.ceil(-p.m));
@@ -1548,8 +1636,8 @@ function debtPanel(s){
   h+=`<div class="pd">${tl('debt_info',p.m,need)}</div>`;
   if(p.bot)h+=`<b>${tl('botplaying',esc(p.n))}</b>`;
   else if(mine){
-   if(sell.length)h+=`<div class="pd">${tl('debt_sell')}</div><div class="chips">`+sell.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('sell',${k})">🏚️ ${iconOf(k)} ${esc(sn(k))} <small>+${sval(k)}</small></span>`).join('')+`</div>`;
-   if(mort.length)h+=`<div class="pd">${tl('debt_mort')}</div><div class="chips">`+mort.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')+`</div>`;
+   if(sell.length)h+=`<div class="pd">${tl('debt_sell')}</div><div class="chips">`+sell.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('sell',${k})">🏚️ ${iconOf(k)} ${esc(sn(k))} <small>+${sval(k)}</small></span>`).join('')+`</div>`;
+   if(mort.length)h+=`<div class="pd">${tl('debt_mort')}</div><div class="chips">`+mort.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')+`</div>`;
    h+=Bt('dbank',tl('b_debt_giveup'),'s');
   } else h+=`<b>${tl('debt_waiting',esc(p.n))}</b>`;
   return h}
@@ -1573,16 +1661,16 @@ function controls(s){
   if(s.ph==='roll')h+=Bt('roll',p.jail>0?tl('b_rolljail'):tl('b_roll'))+(p.jail>0?Bt('payj',tl('b_payjail',P.jailFine),'s'):'');
   if(s.ph==='buy')h+=Bt('buy',tl('b_buy',esc(sn(p.pos)),S[p.pos][2]),'',undefined,p.m<S[p.pos][2])+Bt('skip',tl('b_auction'),'s');
   if(s.ph==='end')h+=Bt('end',s.again?tl('b_rollagain'):tl('b_endturn'));
-  if(mid&&s.P.filter(x=>!x.out).length>1)h+=`<button class="s" onclick="openTrade()">${tl('b_trade')}</button>`;
+  if(mid&&s.P.filter(x=>!x.out).length>1)h+=`<button class="s" data-onclick="openTrade()">${tl('b_trade')}</button>`;
  return h}
 // ===== players, net worth, disconnects =====
 function playersHTML(s){
  const best=Math.max(...s.P.map((p,i)=>worth(s,i).total));
  return s.P.map((p,i)=>{
   const ow=Object.keys(s.O).map(Number).filter(k=>s.O[k]===i).sort((a,b)=>a-b),dm=fx('dm')&&fx('dm')[i],w=worth(s,i),pos=posNow(s,i);
-  return `<div class="pb${i===s.t&&s.w==null?' turn':''}" style="--oc:${PC[p.c]}"><div class="pl ${p.id===me?'me':''}">${tok(p)}${i===s.t&&s.w==null?'▶ ':''}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?tl('you'):''}${p.id===me?` <button class="s" style="min-height:22px;padding:0 7px;font-size:12px" onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''} — 💰 ${p.m}${p.jail?' 🚔':''}${p.out?' 💀':''}${p.fp?` 👑×${p.fp}`:''}${p.gj?` 📞×${p.gj}`:''}${p.sk?tl('skipmark'):''}${dm?`<b class="fl ${dm>0?'up':'dn'}" style="${ad(FX.ls)}">${dm>0?'+':''}${dm}</b>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:24px;padding:1px 8px;font-size:12px" onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`+
+  return `<div class="pb${i===s.t&&s.w==null?' turn':''}" style="--oc:${PC[p.c]}"><div class="pl ${p.id===me?'me':''}">${tok(p)}${i===s.t&&s.w==null?'▶ ':''}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?tl('you'):''}${p.id===me?` <button class="s" style="min-height:22px;padding:0 7px;font-size:12px" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''} — 💰 ${p.m}${p.jail?' 🚔':''}${p.out?' 💀':''}${p.fp?` 👑×${p.fp}`:''}${p.gj?` 📞×${p.gj}`:''}${p.sk?tl('skipmark'):''}${dm?`<b class="fl ${dm>0?'up':'dn'}" style="${ad(FX.ls)}">${dm>0?'+':''}${dm}</b>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:24px;padding:1px 8px;font-size:12px" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`+
   `<div class="nwl">${!p.out&&w.total===best&&s.P.length>1?'🥇 ':''}${tl('networth')} <b>${w.total}</b> <small>= 💰${w.cash} + 🏙️${w.lands} + 🏗️${w.bld} − 🔒${w.debt}</small></div><div class="pd">📍 ${lnk(pos,iconOf(pos)+' '+esc(sn(pos)))}</div>`+
-  (ow.length?`<div class="chips">${ow.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="pick(${k})">${iconOf(k)} ${esc(sn(k))}${hh(s,k)?' '+(hh(s,k)>=5?'🏨':'🏠'.repeat(hh(s,k))):''}${mg(s,k)?' 🔒 '+ucost(k):''}</span>`).join('')}</div>`:'')+`</div>`}).join('')}
+  (ow.length?`<div class="chips">${ow.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="pick(${k})">${iconOf(k)} ${esc(sn(k))}${hh(s,k)?' '+(hh(s,k)>=5?'🏨':'🏠'.repeat(hh(s,k))):''}${mg(s,k)?' 🔒 '+ucost(k):''}</span>`).join('')}</div>`:'')+`</div>`}).join('')}
 const MISS={};let MT2=null;
 function trackMiss(s){
  if(!s||!PRES)return;const t=now();let wait=0;
@@ -1592,7 +1680,7 @@ const gone=p=>!p.bot&&PRES&&!here(p.id)&&MISS[p.id]&&now()-MISS[p.id]>=8000;
 function dcBanner(s){
  if(local||!PRES||!s.P.some(x=>x.id===me&&!x.bot))return '';
  const m=s.P.map((p,i)=>[p,i]).filter(([p])=>!p.out&&gone(p));if(!m.length)return '';
-  return '<div class="panel dc">'+m.map(([p,i])=>`${tl('disc',esc(p.n))}${(local||hostId(s)===me)?` <button onclick="act('replace',${i})">${tl('b_replace')}</button>`:''}`).join('<br>')+'</div>'}
+  return '<div class="panel dc">'+m.map(([p,i])=>`${tl('disc',esc(p.n))}${(local||hostId(s)===me)?` <button data-onclick="act('replace',${i})">${tl('b_replace')}</button>`:''}`).join('<br>')+'</div>'}
 let LPN=-1,PST0=-1;
 function renderClassic(){
  const a=document.getElementById('app'),G0=G;
@@ -1604,17 +1692,17 @@ function renderClassic(){
  if(!st){
   const P2=s?s.P:[];if(LPN>=0&&P2.length>LPN)sfx('join');LPN=P2.length;
   const joined=P2.some(x=>x.id===me);
-  h+=`<div class="panel">${poster()}<b>${tl('lobby')}</b> <br><small>${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s" style="min-height:30px;padding:2px 10px;font-size:12px" onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}`;
-  if(!local)h+=`<div><small>${tl('roomcode','<b>'+esc(window.ROOM||ROOM)+'</b>')}</small><input readonly value="${esc(location.href)}" onclick="this.select()" style="width:100%;margin:4px 0"></div>`;
-  h+=P2.map((p,i)=>`<div class="pl">${tok(p)}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?` <button class="s" style="min-height:24px;padding:0 8px;font-size:12px" onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:30px;padding:2px 10px" onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
-  if(!joined&&P2.length<6)h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--bd,#999);border-radius:14px"><div style="display:flex;gap:8px"><input id="nm" placeholder="${tl('yourname')}" maxlength="14" style="flex:1;min-width:0"> <button onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;
+  h+=`<div class="panel">${poster()}<b>${tl('lobby')}</b> <br><small>${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s" style="min-height:30px;padding:2px 10px;font-size:12px" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}`;
+  if(!local)h+=`<div><small>${tl('roomcode','<b>'+esc(window.ROOM||ROOM)+'</b>')}</small><input readonly value="${esc(location.href)}" data-onclick="this.select()" style="width:100%;margin:4px 0"></div>`;
+  h+=P2.map((p,i)=>`<div class="pl">${tok(p)}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?` <button class="s" style="min-height:24px;padding:0 8px;font-size:12px" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:30px;padding:2px 10px" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
+  if(!joined&&P2.length<6){const dj=discordJoinHTML();if(dj)h+=dj;else h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--bd,#999);border-radius:14px"><div style="display:flex;gap:8px"><input id="nm" placeholder="${tl('yourname')}" maxlength="14" style="flex:1;min-width:0"> <button data-onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;}
 
-  if(P2.length>=2&&(local||hostId(s)===me))h+=`<button onclick="act('start')">${tl('b_start')}</button>`;
+  if(P2.length>=2&&(local||hostId(s)===me))h+=`<button data-onclick="act('start')">${tl('b_start')}</button>`;
   else if(P2.length>=2)h+=`<p><small>${tl('waithost',esc((s.P.find(x=>x.id===hostId(s))||P2[0]).n))}</small></p>`;
-  if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd,#999);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" style="min-height:30px;padding:2px 10px" onclick="act('bot')">${tl('b_addbot')}</button></div>`;
+  if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd,#999);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" style="min-height:30px;padding:2px 10px" data-onclick="act('bot')">${tl('b_addbot')}</button></div>`;
   h+=`</div>`}
  else{
-  h+=`<div class="gm"><div class="bcol">${strip(s)}<div class="board${fx('shake')?' shake':''}"${fx('shake')?` style="${ad(FX.ls)}"`:''}>${board(s)}</div><div class="lg"><span>${tl('lg_sale')}</span><span><i class="lgd"></i> ${tl('lg_owned')}</span><span>${tl('lg_full')}</span><span>${tl('lg_rise')}</span><span>${tl('lg_mort')}</span><span>${tl('lg_tap')}</span></div></div><div class="scol">${roPanel(s)}${dcBanner(s)}<div class="panel ctl" style="text-align:center">${controls(s)}</div>${sqPanel(s)}<div class="panel">${playersHTML(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div></div></div>`}
+  h+=`<div class="gm"><div class="bcol">${strip(s)}<div class="board${fx('shake')?' shake':''}"${fx('shake')?` style="${ad(FX.ls)}"`:''}>${board(s)}</div><div class="lg"><span>${tl('lg_sale')}</span><span><i class="lgd"></i> ${tl('lg_owned')}</span><span>${tl('lg_full')}</span><span>${tl('lg_rise')}</span><span>${tl('lg_mort')}</span><span>${tl('lg_tap')}</span></div></div><div class="scol">${roPanel(s)}${dcBanner(s)}<div class="panel ctl" style="text-align:center">${controls(s)}</div>${sqPanel(s)}<div class="panel">${playersHTML(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" data-onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div></div></div>`}
  if(err)h+=`<p style="color:var(--ac)">${esc(err)}</p>`;
  h+=`<p><small>${tl('rules',P.startCash,P.passGo,P.jailFine,Math.round((P.esc-1)*100),Math.round(P.turnSeconds/60),P.timeoutPenalty,Math.round(P.tradeTaxMax*100))}<br>${tl('credit')}</small></p>`;
  const ae=document.activeElement,aid=ae&&ae.id,av=aid&&ae.value;
@@ -1688,8 +1776,8 @@ const iconOf=i=>FL[i]||IC[S[i][1]]||'';
 const ini=n=>Array.from(String(n).replace(/^🤖\s*/,'🤖'))[0]||'?';
 const grpMembers=k=>S[k][1]==='p'?GRP[S[k][3]]:S[k][1]==='r'?RAILS:S[k][1]==='u'?UTILS:[k];
 const posNow=(s,i)=>DP[i]!==undefined?DP[i]:s.P[i].pos;
-const tok=(p)=>`<u class="tok" style="background:${PC[p.c]}">${esc(ini(p.n))}</u>`;
-function grpChips(s,k){return grpMembers(k).map(x=>{const o=s.O[x],ow=o!=null?s.P[o]:null;return `<span class="gmem${x===k?' me':''}${mg(s,x)?' mgd':''}" style="--oc:${ow?PC[ow.c]:'#999'};--gc:${S[x][1]==='p'?GC[S[x][3]]:'#888'}" onclick="pick(${x})">${ow?tok(ow):'🏷️'} ${esc(sn(x))}${mg(s,x)?' 🔒':''}</span>`}).join('')}
+const tok=(p)=>`<u class="tok" style="background:${PC[p.c]}">${esc(ini(p.n))}${p.av?`<img class="tokav" src="${esc(p.av)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</u>`;
+function grpChips(s,k){return grpMembers(k).map(x=>{const o=s.O[x],ow=o!=null?s.P[o]:null;return `<span class="gmem${x===k?' me':''}${mg(s,x)?' mgd':''}" style="--oc:${ow?PC[ow.c]:'#999'};--gc:${S[x][1]==='p'?GC[S[x][3]]:'#888'}" data-onclick="pick(${x})">${ow?tok(ow):'🏷️'} ${esc(sn(x))}${mg(s,x)?' 🔒':''}</span>`}).join('')}
 function mgInfo(k){return tl('mginfo',mval(k),ucost(k))}
 function myIdx(s){return s.P.findIndex(p=>p.id===me&&!p.bot)}
 // ===== board =====
@@ -1699,33 +1787,33 @@ function board(s){
   const q=S[i],[r,c]=posOf(i),o=s.O[i],by=BUY(q),ow=by&&o!=null?s.P[o]:null,oc=ow?PC[ow.c]:'',hs=hh(s,i),m=ow&&mg(s,i),
    full=ow&&q[1]==='p'&&GRP[q[3]].every(x=>s.O[x]===o),
    here=s.P.map((p,k)=>k).filter(k=>!s.P[k].out&&posNow(s,k)===i),curHere=here.includes(s.t)&&s.w==null,
-   tk=here.map(k=>`<u class="${k===s.t&&s.w==null?'cur':''}" style="background:${PC[s.P[k].c]};animation-delay:-${(Date.now()%1000)/1000}s">${esc(ini(s.P[k].n))}</u>`).join(''),
+   tk=here.map(k=>`<u class="${k===s.t&&s.w==null?'cur':''}" style="background:${PC[s.P[k].c]};animation-delay:-${(Date.now()%1000)/1000}s">${esc(ini(s.P[k].n))}${s.P[k].av?`<img class="tokav" src="${esc(s.P[k].av)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</u>`).join(''),
    pop=fx('pop')&&fx('pop').has(i),nw=fx('nw')&&fx('nw').has(i),vv=(s.V&&s.V[i])||0,hl=HL&&HL.i===i&&Date.now()<HL.t+3200;
-  h+=`<div class="sq${pop?' pop':''}${nw?' nw':''}${by?(ow?' own':' free'):''}${m?' mg':''}${sg&&sg.has(i)?' sg':''}${here.length?(curHere?' here':' occ'):''}${hl?' hl':''}" data-i="${i}" onclick="pick(${i})" style="grid-area:${r}/${c};${ow?`--oc:${oc};`:''}${here.length?`--hc:${PC[s.P[curHere?s.t:here[0]].c]};`:''}${q[1]==='p'?`--gc:${GC[q[3]]};`:''}${hl?ad(HL.t):(pop||nw)?ad(FX.ls):''}">${IMG[i]?`<img class="ph" src="${esc(IMG[i])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}${q[1]==='p'?`<i class="gb"></i>`:''}${ow?`<em class="ob" style="background:${oc}">${esc(ini(ow.n))}</em>`:by?'<em class="fr">🏷️</em>':''}${hs?`<em class="hs">${hs>=5?'🏨':'🏠'.repeat(hs)}</em>`:''}<b>${iconOf(i)}</b><span>${esc(sn(i))}</span>${by?(ow?`<small class="rt" style="background:${oc}">${m?'🔒':(full?'⭐':'')+(q[1]==='u'?'≈':'')+rentOf(s,i,7)+(vv?'📈':'')}</small>`:`<small>${q[2]}</small>`):q[2]?`<small>${q[2]}</small>`:''}<div class="tk">${tk}</div></div>`}
+  h+=`<div class="sq${pop?' pop':''}${nw?' nw':''}${by?(ow?' own':' free'):''}${m?' mg':''}${sg&&sg.has(i)?' sg':''}${here.length?(curHere?' here':' occ'):''}${hl?' hl':''}" data-i="${i}" data-onclick="pick(${i})" style="grid-area:${r}/${c};${ow?`--oc:${oc};`:''}${here.length?`--hc:${PC[s.P[curHere?s.t:here[0]].c]};`:''}${q[1]==='p'?`--gc:${GC[q[3]]};`:''}${hl?ad(HL.t):(pop||nw)?ad(FX.ls):''}">${IMG[i]?`<img class="ph" src="${esc(IMG[i])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}${q[1]==='p'?`<i class="gb"></i>`:''}${ow?`<em class="ob" style="background:${oc}">${esc(ini(ow.n))}</em>`:by?'<em class="fr">🏷️</em>':''}${hs?`<em class="hs">${hs>=5?'🏨':'🏠'.repeat(hs)}</em>`:''}<b>${iconOf(i)}</b><span>${esc(sn(i))}</span>${by?(ow?`<small class="rt" style="background:${oc}">${m?'🔒':(full?'⭐':'')+(q[1]==='u'?'≈':'')+rentOf(s,i,7)+(vv?'📈':'')}</small>`:`<small>${q[2]}</small>`):q[2]?`<small>${q[2]}</small>`:''}<div class="tk">${tk}</div></div>`}
  h+=`<div class="mid"><div class="t" style="animation-delay:-${(Date.now()%2500)/1000}s">${tl('title')}</div>${pcard(s)}<div class="dice${fxr()?' roll':''}"${fxr()?` style="${ad(FX.rs)}"`:''}>${D[s.d[0]-1]}${D[s.d[1]-1]}</div><div class="log">${s.log.map(e=>fmtLog(e,true)).join('<br>')}</div></div>`;
  return h}
 function strip(s){
  return '<div class="strip">'+s.P.map((p,i)=>{
   if(p.out)return `<span class="pch out">💀 ${esc(p.n)}</span>`;
   const pos=posNow(s,i),w=worth(s,i),isT=i===s.t&&s.w==null;
-  return `<span class="pch${isT?' turn':''}" style="--oc:${PC[p.c]}" onclick="pick(${pos})">${tok(p)}<b>${esc(p.n)}</b>${isT&&s.dl?' <span class="cd"></span>':''}<small>📍 ${iconOf(pos)} ${esc(sn(pos))} · 💎 ${w.total}</small></span>`}).join('')+'</div>'}
+  return `<span class="pch${isT?' turn':''}" style="--oc:${PC[p.c]}" data-onclick="pick(${pos})">${tok(p)}<b>${esc(p.n)}</b>${isT&&s.dl?' <span class="cd"></span>':''}<small>📍 ${iconOf(pos)} ${esc(sn(pos))} · 💎 ${w.total}</small></span>`}).join('')+'</div>'}
 function pcard(s){
  const q=S[CARD],by=BUY(q),o=by?s.O[CARD]:undefined,ow=o!=null?s.P[o]:null;let d='';
  if(by)d=ow?`<span class="ob2" style="background:${PC[ow.c]}">${esc(ini(ow.n))}</span> ${esc(ow.n)} — ${mg(s,CARD)?tl('mortgaged'):tl('rent_n',rentOf(s,CARD,7))}${hh(s,CARD)?' · '+(hh(s,CARD)>=5?'🏨':'🏠'.repeat(hh(s,CARD))):''}${(s.V&&s.V[CARD])?' 📈×'+s.V[CARD]:''}`:tl('forsale',q[2]);
- return `<div class="pcard" onclick="pick(${CARD})">${IMG[CARD]?`<img src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><div>${iconOf(CARD)} ${esc(sn(CARD))}</div><div class="pd">${d}</div></div></div>`}
+ return `<div class="pcard" data-onclick="pick(${CARD})">${IMG[CARD]?`<img src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><div>${iconOf(CARD)} ${esc(sn(CARD))}</div><div class="pd">${d}</div></div></div>`}
 let HL=null;
-const lnk=(k,t)=>`<span class="lnk" onclick="event.stopPropagation();pick(${k})">${t}</span>`;
+const lnk=(k,t)=>`<span class="lnk" data-onclick="event.stopPropagation();pick(${k})">${t}</span>`;
 // clicking ANY land name / picture anywhere flashes that square on the board (and scrolls it into view if needed)
 function pick(i){CARD=i;HL={i,t:Date.now()};sfx('tap');render();focusSq(i)}
 function focusSq(i){if(!document.querySelector)return;const e=document.querySelector('.sq[data-i="'+i+'"]');if(!e||!e.scrollIntoView)return;
  const r=e.getBoundingClientRect(),c=document.querySelector('.ctl'),lim=c&&innerWidth<900?c.getBoundingClientRect().top:innerHeight;
  if(r.top<50||r.bottom>lim-10)e.scrollIntoView({block:'center',behavior:'smooth'})}
-const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
+const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
 function sqPanel(s){
  const q=S[CARD];if(!BUY(q))return '';
  const o=s.O[CARD],ow=o!=null?s.P[o]:null,i=s.t,p=s.P[i],R=RN[CARD];
   const mineP=ow&&!ow.bot&&(local||ow.id===me),can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===i));
-  let h=`<div class="panel">`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
+  let h=`<div class="panel">`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
   if(q[1]==='p')h+=tl('rentline',R.r0,R.rs,R.r[1],R.r[2],R.r[3],R.r[4],R.r[5])+'<br>'+tl('housecost',R.hc,sval(CARD));
   else if(q[1]==='r')h+=tl('railrent',P.rail.join(' ← '));
   else h+=tl('utilrent',P.util[0],P.util[1]);
@@ -1744,14 +1832,14 @@ const netVal=(s,m,list)=>m+list.reduce((a,k)=>a+S[k][2]-(mg(s,k)?ucost(k):0),0);
 const cdHdr=()=>'<div class="ctlh">⏱️ <span class="cd"></span></div>';
 function aucUI(s){
  const a=s.au,q=S[a.sq],c=s.P[a.cur],mineT=!c.bot&&(local||c.id===me),mi=local?-1:myIdx(s);
-  return cdHdr()+`<b>${tl('auc_title',lnk(a.sq,iconOf(a.sq)+' '+esc(sn(a.sq))))}</b><br><small>${tl('auc_info',q[2],mgInfo(a.sq),a.bid?tl('bid_from',a.bid,esc(s.P[a.bidder].n)):tl('nobid'))}</small><br>`+(mineT?`${tl('yourbid',esc(c.n))}<br>`+P.bids.map(v=>Bt('abid','+'+v,'',v,c.m<a.bid+v)).join('')+Bt('apass',tl('b_pass'),'s'):tl('waiting',esc(c.n)))+((local||mi>=0&&!s.P[mi].out)?`<br><button class="s" onclick="openTrade()">${tl('b_tradeauc')}</button>`:'')+mortRow(s,local?a.cur:mi)}
+  return cdHdr()+`<b>${tl('auc_title',lnk(a.sq,iconOf(a.sq)+' '+esc(sn(a.sq))))}</b><br><small>${tl('auc_info',q[2],mgInfo(a.sq),a.bid?tl('bid_from',a.bid,esc(s.P[a.bidder].n)):tl('nobid'))}</small><br>`+(mineT?`${tl('yourbid',esc(c.n))}<br>`+P.bids.map(v=>Bt('abid','+'+v,'',v,c.m<a.bid+v)).join('')+Bt('apass',tl('b_pass'),'s'):tl('waiting',esc(c.n)))+((local||mi>=0&&!s.P[mi].out)?`<br><button class="s" data-onclick="openTrade()">${tl('b_tradeauc')}</button>`:'')+mortRow(s,local?a.cur:mi)}
 function trUI(s){
  const t=s.tr,A=s.P[t.from],B=s.P[t.to],toMe=!B.bot&&(local||B.id===me),fromMe=!A.bot&&(local||A.id===me),anyMg=[...t.gp,...t.wp].some(k=>mg(s,k));
   return cdHdr()+`<b>${tl('offer_title')}</b><div class="pd" style="color:var(--tx)">${tl('gives',esc(A.n),money(s,t.gm,t.gp))} <small>${tl('netval',netVal(s,t.gm,t.gp))}</small><br>${tl('gives',esc(B.n),money(s,t.wm,t.wp))} <small>${tl('netval',netVal(s,t.wm,t.wp))}</small>${taxLine(s,t)}${anyMg?'<br>'+tl('mgwarn'):''}</div>`+(toMe?Bt('tacc',tl('b_accept'),'',undefined,!validTrade(s,t))+Bt('trej',tl('b_reject'),'s'):fromMe?tl('awaiting',esc(B.n))+' '+Bt('tcancel',tl('b_cancel_offer'),'s'):tl('thinking',esc(B.n)))}
 function mortRow(s,i){
  if(i==null||i<0||!s.P[i]||s.P[i].out)return '';
  const l=Object.keys(s.O).map(Number).filter(k=>s.O[k]===i&&!mg(s,k)&&canMort(s,k));
-  return `<div class="pd">${tl('mortrow',s.P[i].m)}</div>`+(l.length?`<div class="chips">${l.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')}</div>`:`<small>${tl('nomort')}</small>`)}
+  return `<div class="pd">${tl('mortrow',s.P[i].m)}</div>`+(l.length?`<div class="chips">${l.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')}</div>`:`<small>${tl('nomort')}</small>`)}
 function taxLine(s,t){const x=tradeTax(s,t);return `<br>${tl('taxline',Math.round(x.pct*100))}${x.tax?tl('taxpay',x.tax,esc(s.P[x.who].n)):tl('taxnone')}`}
 
 function proposer(s){return local?(s.au?s.au.cur:s.t):myIdx(s)}
@@ -1773,10 +1861,10 @@ function tdRefresh(){
 function tradeUI(s){
  const i=proposer(s),A=s.P[i],oth=s.P.map((p,k)=>k).filter(k=>k!==i&&!s.P[k].out);
  const dt=TD.to>=0?{from:i,to:TD.to,gm:Math.max(0,Math.floor(TD.gm||0)),wm:Math.max(0,Math.floor(TD.wm||0)),gp:TD.gp,wp:TD.wp}:null,ok=dt&&validTrade(s,dt);
- const lst=(idx,side)=>S.map((q,k)=>k).filter(k=>s.O[k]===idx&&!grpH(s,k)).map(k=>`<span class="chip${TD[side].includes(k)?' sel':''}" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="tdTog('${side}',${k})">${iconOf(k)} ${esc(sn(k))} <span onclick="event.stopPropagation();pick(${k})">🔍</span><br><small>${mg(s,k)?tl('mgcost',ucost(k)):tl('mgget',mval(k))}</small></span>`).join('')||`<small>${tl('none')}</small>`;
-  let h=`<b>${tl('tr_title')}</b><br>${tl('with_who')} `+oth.map(k=>`<button class="${TD.to===k?'':'s'}" onclick="tdTo(${k})">${esc(s.P[k].n)}</button>`).join('');
-  if(TD.to>=0)h+=`<div class="tcol"><b>${tl('yougive')}</b> 💰<input id="tgm" type="number" min="0" max="${A.m}" value="${TD.gm}" oninput="TD.gm=+this.value||0;tdRefresh()"><div class="chips">${lst(i,'gp')}</div></div><div class="tcol"><b>${tl('youwant')}</b> 💰<input id="twm" type="number" min="0" value="${TD.wm}" oninput="TD.wm=+this.value||0;tdRefresh()"><div class="chips">${lst(TD.to,'wp')}</div></div><div class="pd" id="tinfo">${tl('netline',netVal(s,TD.gm,TD.gp),netVal(s,TD.wm,TD.wp))} <small>${tl('netnote')}</small>${taxLine(s,dt)}${ok?'':'<br>'+tl('invalid_trade')}</div><button id="tsend" ${ok?'':'disabled'} onclick="tdSend()">${tl('b_send')}</button>`;
-  return h+`<button class="s" onclick="TD=null;render()">${tl('b_cancel')}</button>`}
+ const lst=(idx,side)=>S.map((q,k)=>k).filter(k=>s.O[k]===idx&&!grpH(s,k)).map(k=>`<span class="chip${TD[side].includes(k)?' sel':''}" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="tdTog('${side}',${k})">${iconOf(k)} ${esc(sn(k))} <span data-onclick="event.stopPropagation();pick(${k})">🔍</span><br><small>${mg(s,k)?tl('mgcost',ucost(k)):tl('mgget',mval(k))}</small></span>`).join('')||`<small>${tl('none')}</small>`;
+  let h=`<b>${tl('tr_title')}</b><br>${tl('with_who')} `+oth.map(k=>`<button class="${TD.to===k?'':'s'}" data-onclick="tdTo(${k})">${esc(s.P[k].n)}</button>`).join('');
+  if(TD.to>=0)h+=`<div class="tcol"><b>${tl('yougive')}</b> 💰<input id="tgm" type="number" min="0" max="${A.m}" value="${TD.gm}" data-oninput="TD.gm=+this.value||0;tdRefresh()"><div class="chips">${lst(i,'gp')}</div></div><div class="tcol"><b>${tl('youwant')}</b> 💰<input id="twm" type="number" min="0" value="${TD.wm}" data-oninput="TD.wm=+this.value||0;tdRefresh()"><div class="chips">${lst(TD.to,'wp')}</div></div><div class="pd" id="tinfo">${tl('netline',netVal(s,TD.gm,TD.gp),netVal(s,TD.wm,TD.wp))} <small>${tl('netnote')}</small>${taxLine(s,dt)}${ok?'':'<br>'+tl('invalid_trade')}</div><button id="tsend" ${ok?'':'disabled'} data-onclick="tdSend()">${tl('b_send')}</button>`;
+  return h+`<button class="s" data-onclick="TD=null;render()">${tl('b_cancel')}</button>`}
 function debtPanel(s){
   const d=s.debt,p=s.P[d.i],mine=local||p.id===me;
   const need=Math.max(0,Math.ceil(-p.m));
@@ -1786,8 +1874,8 @@ function debtPanel(s){
   h+=`<div class="pd">${tl('debt_info',p.m,need)}</div>`;
   if(p.bot)h+=`<b>${tl('botplaying',esc(p.n))}</b>`;
   else if(mine){
-   if(sell.length)h+=`<div class="pd">${tl('debt_sell')}</div><div class="chips">`+sell.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('sell',${k})">🏚️ ${iconOf(k)} ${esc(sn(k))} <small>+${sval(k)}</small></span>`).join('')+`</div>`;
-   if(mort.length)h+=`<div class="pd">${tl('debt_mort')}</div><div class="chips">`+mort.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')+`</div>`;
+   if(sell.length)h+=`<div class="pd">${tl('debt_sell')}</div><div class="chips">`+sell.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('sell',${k})">🏚️ ${iconOf(k)} ${esc(sn(k))} <small>+${sval(k)}</small></span>`).join('')+`</div>`;
+   if(mort.length)h+=`<div class="pd">${tl('debt_mort')}</div><div class="chips">`+mort.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')+`</div>`;
    h+=Bt('dbank',tl('b_debt_giveup'),'s');
   } else h+=`<b>${tl('debt_waiting',esc(p.n))}</b>`;
   return h}
@@ -1811,16 +1899,16 @@ function controls(s){
   if(s.ph==='roll')h+=Bt('roll',p.jail>0?tl('b_rolljail'):tl('b_roll'))+(p.jail>0?Bt('payj',tl('b_payjail',P.jailFine),'s'):'');
   if(s.ph==='buy')h+=Bt('buy',tl('b_buy',esc(sn(p.pos)),S[p.pos][2]),'',undefined,p.m<S[p.pos][2])+Bt('skip',tl('b_auction'),'s');
   if(s.ph==='end')h+=Bt('end',s.again?tl('b_rollagain'):tl('b_endturn'));
-  if(mid&&s.P.filter(x=>!x.out).length>1)h+=`<button class="s" onclick="openTrade()">${tl('b_trade')}</button>`;
+  if(mid&&s.P.filter(x=>!x.out).length>1)h+=`<button class="s" data-onclick="openTrade()">${tl('b_trade')}</button>`;
  return h}
 // ===== players, net worth, disconnects =====
 function playersHTML(s){
  const best=Math.max(...s.P.map((p,i)=>worth(s,i).total));
  return s.P.map((p,i)=>{
   const ow=Object.keys(s.O).map(Number).filter(k=>s.O[k]===i).sort((a,b)=>a-b),dm=fx('dm')&&fx('dm')[i],w=worth(s,i),pos=posNow(s,i);
-  return `<div class="pb${i===s.t&&s.w==null?' turn':''}" style="--oc:${PC[p.c]}"><div class="pl ${p.id===me?'me':''}">${tok(p)}${i===s.t&&s.w==null?'▶ ':''}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?tl('you'):''}${p.id===me?` <button class="s" style="min-height:22px;padding:0 7px;font-size:12px" onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''} — 💰 ${p.m}${p.jail?' 🚔':''}${p.out?' 💀':''}${p.fp?` 👑×${p.fp}`:''}${p.gj?` 📞×${p.gj}`:''}${p.sk?tl('skipmark'):''}${dm?`<b class="fl ${dm>0?'up':'dn'}" style="${ad(FX.ls)}">${dm>0?'+':''}${dm}</b>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:24px;padding:1px 8px;font-size:12px" onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`+
+  return `<div class="pb${i===s.t&&s.w==null?' turn':''}" style="--oc:${PC[p.c]}"><div class="pl ${p.id===me?'me':''}">${tok(p)}${i===s.t&&s.w==null?'▶ ':''}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?tl('you'):''}${p.id===me?` <button class="s" style="min-height:22px;padding:0 7px;font-size:12px" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''} — 💰 ${p.m}${p.jail?' 🚔':''}${p.out?' 💀':''}${p.fp?` 👑×${p.fp}`:''}${p.gj?` 📞×${p.gj}`:''}${p.sk?tl('skipmark'):''}${dm?`<b class="fl ${dm>0?'up':'dn'}" style="${ad(FX.ls)}">${dm>0?'+':''}${dm}</b>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:24px;padding:1px 8px;font-size:12px" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`+
   `<div class="nwl">${!p.out&&w.total===best&&s.P.length>1?'🥇 ':''}${tl('networth')} <b>${w.total}</b> <small>= 💰${w.cash} + 🏙️${w.lands} + 🏗️${w.bld} − 🔒${w.debt}</small></div><div class="pd">📍 ${lnk(pos,iconOf(pos)+' '+esc(sn(pos)))}</div>`+
-  (ow.length?`<div class="chips">${ow.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="pick(${k})">${iconOf(k)} ${esc(sn(k))}${hh(s,k)?' '+(hh(s,k)>=5?'🏨':'🏠'.repeat(hh(s,k))):''}${mg(s,k)?' 🔒 '+ucost(k):''}</span>`).join('')}</div>`:'')+`</div>`}).join('')}
+  (ow.length?`<div class="chips">${ow.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="pick(${k})">${iconOf(k)} ${esc(sn(k))}${hh(s,k)?' '+(hh(s,k)>=5?'🏨':'🏠'.repeat(hh(s,k))):''}${mg(s,k)?' 🔒 '+ucost(k):''}</span>`).join('')}</div>`:'')+`</div>`}).join('')}
 const MISS={};let MT2=null;
 function trackMiss(s){
  if(!s||!PRES)return;const t=now();let wait=0;
@@ -1830,7 +1918,7 @@ const gone=p=>!p.bot&&PRES&&!here(p.id)&&MISS[p.id]&&now()-MISS[p.id]>=8000;
 function dcBanner(s){
  if(local||!PRES||!s.P.some(x=>x.id===me&&!x.bot))return '';
  const m=s.P.map((p,i)=>[p,i]).filter(([p])=>!p.out&&gone(p));if(!m.length)return '';
-  return '<div class="panel dc">'+m.map(([p,i])=>`${tl('disc',esc(p.n))}${(local||hostId(s)===me)?` <button onclick="act('replace',${i})">${tl('b_replace')}</button>`:''}`).join('<br>')+'</div>'}
+  return '<div class="panel dc">'+m.map(([p,i])=>`${tl('disc',esc(p.n))}${(local||hostId(s)===me)?` <button data-onclick="act('replace',${i})">${tl('b_replace')}</button>`:''}`).join('<br>')+'</div>'}
 let LPN=-1,PST0=-1;
 function renderMidnight(){
  const a=document.getElementById('app'),G0=G;
@@ -1843,18 +1931,18 @@ function renderMidnight(){
   const P2=s?s.P:[];if(LPN>=0&&P2.length>LPN)sfx('join');LPN=P2.length;
   const joined=P2.some(x=>x.id===me);
   h+=`<div class="lobby"><div class="panel lobbycard"><div class="herowrap">${poster()}</div>`;
-  h+=`<div class="lobbymeta"><b>${tl('lobby')}</b> <br><small class="cfg">${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s mini" onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}</div>`;
-  if(!local)h+=`<div class="roombox"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" onclick="this.select()"></div>`;
+  h+=`<div class="lobbymeta"><b>${tl('lobby')}</b> <br><small class="cfg">${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s mini" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}</div>`;
+  if(!local)h+=`<div class="roombox"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" data-onclick="this.select()"></div>`;
   h+=`<div class="seats">`;
-  h+=P2.map((p,i)=>`<div class="seat">${tok(p)}${hostId(s)===p.id?'<span class="crown">👑</span>':''}<span class="seatname">${esc(p.n)}</span>${p.id===me?` <button class="s mini" onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s mini" onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
+  h+=P2.map((p,i)=>`<div class="seat">${tok(p)}${hostId(s)===p.id?'<span class="crown">👑</span>':''}<span class="seatname">${esc(p.n)}</span>${p.id===me?` <button class="s mini" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s mini" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
   h+=`</div>`;
-  if(!joined&&P2.length<6)h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--edge,#555);border-radius:14px"><div class="joinrow" style="margin-top:0"><input id="nm" placeholder="${tl('yourname')}" maxlength="14"><button class="primary" onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;
+  if(!joined&&P2.length<6){const dj=discordJoinHTML();if(dj)h+=dj;else h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--edge,#555);border-radius:14px"><div class="joinrow" style="margin-top:0"><input id="nm" placeholder="${tl('yourname')}" maxlength="14"><button class="primary" data-onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;}
 
   h+=`<div class="lobbycta">`;
-  if(P2.length>=2&&(local||hostId(s)===me))h+=`<button class="primary big" onclick="act('start')">${tl('b_start')}</button>`;
+  if(P2.length>=2&&(local||hostId(s)===me))h+=`<button class="primary big" data-onclick="act('start')">${tl('b_start')}</button>`;
   else if(P2.length>=2)h+=`<span class="wait">${tl('waithost',esc((s.P.find(x=>x.id===hostId(s))||P2[0]).n))}</span>`;
   h+=`</div>`;
-  if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--edge,#444);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" onclick="act('bot')">${tl('b_addbot')}</button></div>`;
+  if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--edge,#444);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" data-onclick="act('bot')">${tl('b_addbot')}</button></div>`;
   h+=`</div></div>`;
  }else{
   h+=`<div class="game">`;
@@ -1866,7 +1954,7 @@ function renderMidnight(){
   h+=roPanel(s);
   h+=dcBanner(s);
   h+=sqPanel(s);
-  h+=`<div class="panel players">${playersHTML(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div>`;
+  h+=`<div class="panel players">${playersHTML(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" data-onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div>`;
   h+=`</div></div>`;
  }
  if(err)h+=`<p class="err">${esc(err)}</p>`;
@@ -1920,8 +2008,8 @@ const iconOf=i=>FL[i]||IC[S[i][1]]||'';
 const ini=n=>Array.from(String(n).replace(/^🤖\s*/,'🤖'))[0]||'?';
 const grpMembers=k=>S[k][1]==='p'?GRP[S[k][3]]:S[k][1]==='r'?RAILS:S[k][1]==='u'?UTILS:[k];
 const posNow=(s,i)=>DP[i]!==undefined?DP[i]:s.P[i].pos;
-const tok=p=>`<span class="token" style="--pc:${PC[p.c]}">${esc(ini(p.n))}</span>`;
-function grpChips(s,k){return grpMembers(k).map(x=>{const o=s.O[x],ow=o!=null?s.P[o]:null;return `<span class="gmem${x===k?' me':''}${mg(s,x)?' mgd':''}" style="--oc:${ow?PC[ow.c]:'#999'};--gc:${S[x][1]==='p'?GC[S[x][3]]:'#888'}" onclick="pick(${x})">${ow?tok(ow):'🏷️'} ${esc(sn(x))}${mg(s,x)?' 🔒':''}</span>`}).join('')}
+const tok=p=>`<span class="token" style="--pc:${PC[p.c]}">${esc(ini(p.n))}${p.av?`<img class="tokav" src="${esc(p.av)}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}</span>`;
+function grpChips(s,k){return grpMembers(k).map(x=>{const o=s.O[x],ow=o!=null?s.P[o]:null;return `<span class="gmem${x===k?' me':''}${mg(s,x)?' mgd':''}" style="--oc:${ow?PC[ow.c]:'#999'};--gc:${S[x][1]==='p'?GC[S[x][3]]:'#888'}" data-onclick="pick(${x})">${ow?tok(ow):'🏷️'} ${esc(sn(x))}${mg(s,x)?' 🔒':''}</span>`}).join('')}
 const mgInfo=k=>tl('mginfo',mval(k),ucost(k));
 const myIdx=s=>s.P.findIndex(p=>p.id===me&&!p.bot);
 // opening dice roll-off (each player rolls in turn; ties re-roll)
@@ -1970,7 +2058,7 @@ function board(s){
   if(nw&&nw.has(i))cls.push('nw');
   const delay=((pop&&pop.has(i))||(nw&&nw.has(i)))?';'+ad(FX.ls):'';
   const sty=`left:${x}%;top:${y}%;--gc:${grp};${oc?`--oc:${oc};`:''}${delay}`;
-  parts.push(`<div class="${cls.join(' ')}" data-i="${i}" onclick="pick(${i})" style="${sty}"><span class="nodeIcon">${iconOf(i)}</span><span class="nodeLbl">${esc(sn(i))}</span>${hs?`<span class="nodeHs">${hs>=5?'🏨':'🏠'.repeat(hs)}</span>`:''}${ow?`<span class="nodeOwn" style="background:${oc}">${esc(ini(ow.n))}</span>`:by?'<span class="nodeTag">🏷️</span>':''}${pins?`<span class="pins">${pins}</span>`:''}</div>`);
+  parts.push(`<div class="${cls.join(' ')}" data-i="${i}" data-onclick="pick(${i})" style="${sty}"><span class="nodeIcon">${iconOf(i)}</span><span class="nodeLbl">${esc(sn(i))}</span>${hs?`<span class="nodeHs">${hs>=5?'🏨':'🏠'.repeat(hs)}</span>`:''}${ow?`<span class="nodeOwn" style="background:${oc}">${esc(ini(ow.n))}</span>`:by?'<span class="nodeTag">🏷️</span>':''}${pins?`<span class="pins">${pins}</span>`:''}</div>`);
  }
  return `<div class="map${fx('shake')?' shake':''}"${fx('shake')?` style="${ad(FX.ls)}"`:''}><svg class="trail" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline points="${trail}"/></svg><div class="compass" aria-hidden="true">✥</div>${parts.join('')}</div>`;
 }
@@ -2008,10 +2096,10 @@ function locCard(s){
  return h+`</div>`;
 }
 let HL=null;
-const lnk=(k,t)=>`<span class="lnk" onclick="event.stopPropagation();pick(${k})">${t}</span>`;
+const lnk=(k,t)=>`<span class="lnk" data-onclick="event.stopPropagation();pick(${k})">${t}</span>`;
 function pick(i){CARD=i;HL={i,t:Date.now()};sfx('tap');render();focusSq(i)}
 function focusSq(i){const e=document.querySelector('[data-i="'+i+'"]');if(e&&e.scrollIntoView)e.scrollIntoView({block:'center',behavior:'smooth'})}
-const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
+const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
 // passport list of players
 function playerPassport(s){
  const best=Math.max(...s.P.map((p,i)=>worth(s,i).total));
@@ -2021,8 +2109,8 @@ function playerPassport(s){
    `<div class="stampHead">${tok(p)}<b>${esc(p.n)}</b>${i===s.t&&s.w==null?'<span class="turnflag">▶</span>':''}${hostId(s)===p.id?'<span class="crown">👑</span>':''}${p.out?' <span>💀</span>':''}</div>`+
    `<div class="stampNet">${!p.out&&w.total===best&&s.P.length>1?'🥇 ':''}${tl('networth')} <b>${w.total}</b> <small>· 💰${p.m}${p.jail?' 🚔':''}${p.fp?' 👑×'+p.fp:''}${p.gj?' 📞×'+p.gj:''}${p.sk?' ⏭':''}</small>${dm?`<b class="fl ${dm>0?'up':'dn'}" style="${ad(FX.ls)}">${dm>0?'+':''}${dm}</b>`:''}</div>`+
    `<div class="stampPos">📍 ${lnk(pos,iconOf(pos)+' '+esc(sn(pos)))}</div>`+
-   (ow.length?`<div class="chips">${ow.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="pick(${k})">${iconOf(k)} ${esc(sn(k))}${hh(s,k)?' '+(hh(s,k)>=5?'🏨':'🏠'.repeat(hh(s,k))):''}${mg(s,k)?' 🔒':''}</span>`).join('')}</div>`:'')+
-   ((local||hostId(s)===me)&&p.id!==me?` <button class="s mini" onclick="act('kick',${i})">${tl('b_kick')}</button>`:'')+
+   (ow.length?`<div class="chips">${ow.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="pick(${k})">${iconOf(k)} ${esc(sn(k))}${hh(s,k)?' '+(hh(s,k)>=5?'🏨':'🏠'.repeat(hh(s,k))):''}${mg(s,k)?' 🔒':''}</span>`).join('')}</div>`:'')+
+   ((local||hostId(s)===me)&&p.id!==me?` <button class="s mini" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:'')+
   `</div>`;
  }).join('');
 }
@@ -2039,7 +2127,7 @@ function aucUI(s){
  if(mineT){h+=`<span class="lbl">${tl('yourbid',esc(c.n))}</span>`+P.bids.map(v=>Bt('abid','+'+v,'',v,c.m<a.bid+v)).join('')+Bt('apass',tl('b_pass'),'s')}
  else h+=`<span class="waitline">${tl('waiting',esc(c.n))}</span>`;
  h+=`</div>`;
- if((local||mi>=0&&!s.P[mi].out))h+=`<button class="s" onclick="openTrade()">${tl('b_tradeauc')}</button>`;
+ if((local||mi>=0&&!s.P[mi].out))h+=`<button class="s" data-onclick="openTrade()">${tl('b_tradeauc')}</button>`;
  h+=mortRow(s,local?a.cur:mi);
  return h;
 }
@@ -2057,7 +2145,7 @@ function trUI(s){
 function mortRow(s,i){
  if(i==null||i<0||!s.P[i]||s.P[i].out)return '';
  const l=Object.keys(s.O).map(Number).filter(k=>s.O[k]===i&&!mg(s,k)&&canMort(s,k));
- return `<div class="pd">${tl('mortrow',s.P[i].m)}</div>`+(l.length?`<div class="chips">${l.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')}</div>`:`<small>${tl('nomort')}</small>`);
+ return `<div class="pd">${tl('mortrow',s.P[i].m)}</div>`+(l.length?`<div class="chips">${l.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('mort',${k})">🔒 ${iconOf(k)} ${esc(sn(k))} <small>+${mval(k)}</small></span>`).join('')}</div>`:`<small>${tl('nomort')}</small>`);
 }
 function taxLine(s,t){const x=tradeTax(s,t);return `<br>${tl('taxline',Math.round(x.pct*100))}${x.tax?tl('taxpay',x.tax,esc(s.P[x.who].n)):tl('taxnone')}`}
 
@@ -2079,10 +2167,10 @@ function tdRefresh(){
 function tradeUI(s){
  const i=proposer(s),A=s.P[i],oth=s.P.map((p,k)=>k).filter(k=>k!==i&&!s.P[k].out);
  const dt=TD.to>=0?{from:i,to:TD.to,gm:Math.max(0,Math.floor(TD.gm||0)),wm:Math.max(0,Math.floor(TD.wm||0)),gp:TD.gp,wp:TD.wp}:null,ok=dt&&validTrade(s,dt);
- const lst=(idx,side)=>S.map((q,k)=>k).filter(k=>s.O[k]===idx&&!grpH(s,k)).map(k=>`<span class="chip${TD[side].includes(k)?' sel':''}" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="tdTog('${side}',${k})">${iconOf(k)} ${esc(sn(k))} <span onclick="event.stopPropagation();pick(${k})">🔍</span><br><small>${mg(s,k)?tl('mgcost',ucost(k)):tl('mgget',mval(k))}</small></span>`).join('')||`<small>${tl('none')}</small>`;
- let h=`<div class="turnline">🤝 ${tl('tr_title')}</div><div class="pd">${tl('with_who')} `+oth.map(k=>`<button class="${TD.to===k?'':'s'}" onclick="tdTo(${k})">${esc(s.P[k].n)}</button>`).join('');
- if(TD.to>=0)h+=`<div class="tcol"><b>${tl('yougive')}</b> 💰<input id="tgm" type="number" min="0" max="${A.m}" value="${TD.gm}" oninput="TD.gm=+this.value||0;tdRefresh()"><div class="chips">${lst(i,'gp')}</div></div><div class="tcol"><b>${tl('youwant')}</b> 💰<input id="twm" type="number" min="0" value="${TD.wm}" oninput="TD.wm=+this.value||0;tdRefresh()"><div class="chips">${lst(TD.to,'wp')}</div></div><div class="pd" id="tinfo">${tl('netline',netVal(s,TD.gm,TD.gp),netVal(s,TD.wm,TD.wp))} <small>${tl('netnote')}</small>${taxLine(s,dt)}${ok?'':'<br>'+tl('invalid_trade')}</div><button id="tsend" ${ok?'':'disabled'} onclick="tdSend()">${tl('b_send')}</button>`;
- return h+`<button class="s" onclick="TD=null;render()">${tl('b_cancel')}</button>`;
+ const lst=(idx,side)=>S.map((q,k)=>k).filter(k=>s.O[k]===idx&&!grpH(s,k)).map(k=>`<span class="chip${TD[side].includes(k)?' sel':''}" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="tdTog('${side}',${k})">${iconOf(k)} ${esc(sn(k))} <span data-onclick="event.stopPropagation();pick(${k})">🔍</span><br><small>${mg(s,k)?tl('mgcost',ucost(k)):tl('mgget',mval(k))}</small></span>`).join('')||`<small>${tl('none')}</small>`;
+ let h=`<div class="turnline">🤝 ${tl('tr_title')}</div><div class="pd">${tl('with_who')} `+oth.map(k=>`<button class="${TD.to===k?'':'s'}" data-onclick="tdTo(${k})">${esc(s.P[k].n)}</button>`).join('');
+ if(TD.to>=0)h+=`<div class="tcol"><b>${tl('yougive')}</b> 💰<input id="tgm" type="number" min="0" max="${A.m}" value="${TD.gm}" data-oninput="TD.gm=+this.value||0;tdRefresh()"><div class="chips">${lst(i,'gp')}</div></div><div class="tcol"><b>${tl('youwant')}</b> 💰<input id="twm" type="number" min="0" value="${TD.wm}" data-oninput="TD.wm=+this.value||0;tdRefresh()"><div class="chips">${lst(TD.to,'wp')}</div></div><div class="pd" id="tinfo">${tl('netline',netVal(s,TD.gm,TD.gp),netVal(s,TD.wm,TD.wp))} <small>${tl('netnote')}</small>${taxLine(s,dt)}${ok?'':'<br>'+tl('invalid_trade')}</div><button id="tsend" ${ok?'':'disabled'} data-onclick="tdSend()">${tl('b_send')}</button>`;
+ return h+`<button class="s" data-onclick="TD=null;render()">${tl('b_cancel')}</button>`;
 }
 function debtPanel(s){
  const d=s.debt,p=s.P[d.i],mine=local||p.id===me;
@@ -2093,7 +2181,7 @@ function debtPanel(s){
  h+=`<div class="pd">${tl('debt_info',p.m,need)}</div>`;
  if(p.bot)h+=`<div class="waitline">${tl('botplaying',esc(p.n))}</div>`;
  else if(mine){
-  const chips=(arr,kind,act)=>arr.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" onclick="act('${act}',${k})">${kind} ${iconOf(k)} ${esc(sn(k))} <small>+${act==='sell'?sval(k):mval(k)}</small></span>`).join('');
+  const chips=(arr,kind,act)=>arr.map(k=>`<span class="chip" style="border-inline-start-color:${S[k][1]==='p'?GC[S[k][3]]:'#888'}" data-onclick="act('${act}',${k})">${kind} ${iconOf(k)} ${esc(sn(k))} <small>+${act==='sell'?sval(k):mval(k)}</small></span>`).join('');
   if(sell.length)h+=`<div class="lbl">${tl('debt_sell')}</div><div class="chips">${chips(sell,'🏚️','sell')}</div>`;
   if(mort.length)h+=`<div class="lbl">${tl('debt_mort')}</div><div class="chips">${chips(mort,'🔒','mort')}</div>`;
   h+=Bt('dbank',tl('b_debt_giveup'),'s');
@@ -2121,7 +2209,7 @@ function controls(s){
  if(s.ph==='roll')h+=Bt('roll',p.jail>0?tl('b_rolljail'):tl('b_roll'))+(p.jail>0?Bt('payj',tl('b_payjail',P.jailFine),'s'):'');
  if(s.ph==='buy')h+=Bt('buy',tl('b_buy',esc(sn(p.pos)),S[p.pos][2]),'',undefined,p.m<S[p.pos][2])+Bt('skip',tl('b_auction'),'s');
  if(s.ph==='end')h+=Bt('end',s.again?tl('b_rollagain'):tl('b_endturn'));
- if(mid&&s.P.filter(x=>!x.out).length>1)h+=`<button class="s" onclick="openTrade()">${tl('b_trade')}</button>`;
+ if(mid&&s.P.filter(x=>!x.out).length>1)h+=`<button class="s" data-onclick="openTrade()">${tl('b_trade')}</button>`;
  h+=`</div>`;
  return h;
 }
@@ -2135,7 +2223,7 @@ const gone=p=>!p.bot&&PRES&&!here(p.id)&&MISS[p.id]&&now()-MISS[p.id]>=8000;
 function dcBanner(s){
  if(local||!PRES||!s.P.some(x=>x.id===me&&!x.bot))return '';
  const m=s.P.map((p,i)=>[p,i]).filter(([p])=>!p.out&&gone(p));if(!m.length)return '';
- return '<div class="card dc">'+m.map(([p,i])=>`${tl('disc',esc(p.n))}${(local||hostId(s)===me)?` <button class="s mini" onclick="act('replace',${i})">${tl('b_replace')}</button>`:''}`).join('<br>')+'</div>';
+ return '<div class="card dc">'+m.map(([p,i])=>`${tl('disc',esc(p.n))}${(local||hostId(s)===me)?` <button class="s mini" data-onclick="act('replace',${i})">${tl('b_replace')}</button>`:''}`).join('<br>')+'</div>';
 }
 // ===== render =====
 let LPN=-1,PST0=-1;
@@ -2151,18 +2239,18 @@ function renderAtlas(){
   const joined=P2.some(x=>x.id===me);
   h+=`<div class="lobby"><div class="card journeycard"><div class="herowrap">${poster()}</div>`;
   h+=`<div class="jmeta"><b>${tl('lobby')}</b></div>`;
-  h+=`<div class="jcfg"><small>${esc(tl(...CFGK))}</small>${SHEET_ID?`<button class="s mini" onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}</div>`;
-  if(!local)h+=`<div class="jroom"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" onclick="this.select()"></div>`;
+  h+=`<div class="jcfg"><small>${esc(tl(...CFGK))}</small>${SHEET_ID?`<button class="s mini" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}</div>`;
+  if(!local)h+=`<div class="jroom"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" data-onclick="this.select()"></div>`;
   h+=`<div class="manifest">`;
-  h+=P2.map((p,i)=>`<div class="manifestRow">${tok(p)}${hostId(s)===p.id?'<span class="crown">👑</span>':''}<span class="mname">${esc(p.n)}</span>${p.id===me?` <button class="s mini" onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s mini" onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
+  h+=P2.map((p,i)=>`<div class="manifestRow">${tok(p)}${hostId(s)===p.id?'<span class="crown">👑</span>':''}<span class="mname">${esc(p.n)}</span>${p.id===me?` <button class="s mini" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s mini" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
   h+=`</div>`;
-  if(!joined&&P2.length<6)h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--ink,#555);border-radius:14px"><div class="jjoin" style="margin-top:0"><input id="nm" placeholder="${tl('yourname')}" maxlength="14"><button class="primary" onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;
+  if(!joined&&P2.length<6){const dj=discordJoinHTML();if(dj)h+=dj;else h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--ink,#555);border-radius:14px"><div class="jjoin" style="margin-top:0"><input id="nm" placeholder="${tl('yourname')}" maxlength="14"><button class="primary" data-onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;}
 
   h+=`<div class="jcta">`;
-  if(P2.length>=2&&(local||hostId(s)===me))h+=`<button class="primary big" onclick="act('start')">${tl('b_start')}</button>`;
+  if(P2.length>=2&&(local||hostId(s)===me))h+=`<button class="primary big" data-onclick="act('start')">${tl('b_start')}</button>`;
   else if(P2.length>=2)h+=`<span class="wait">${tl('waithost',esc((s.P.find(x=>x.id===hostId(s))||P2[0]).n))}</span>`;
   h+=`</div>`;
-  if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--ink,#555);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" onclick="act('bot')">${tl('b_addbot')}</button></div>`;
+  if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--ink,#555);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" data-onclick="act('bot')">${tl('b_addbot')}</button></div>`;
   h+=`</div></div></div>`;
  }else{
   h+=`<div class="shell"><div class="mapwrap">`;
@@ -2174,7 +2262,7 @@ function renderAtlas(){
   h+=`<div class="card pass">${diceLine(s)}${controls(s)}</div>`;
   h+=locCard(s);
   h+=dcBanner(s);
-  h+=`<div class="card passport">${playerPassport(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div>`;
+  h+=`<div class="card passport">${playerPassport(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" data-onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div>`;
   h+=`</aside></div>`;
  }
  if(err)h+=`<p class="err">${esc(err)}</p>`;
@@ -2510,7 +2598,7 @@ function toggleLang(){LANG=LANG==='ar'?'en':'ar';try{localStorage.setItem('lang'
 (async()=>{
  applyLang();loadImgs();loadSheetCfg();buildEmoteBar();
  const f=await Promise.race([window.netReady,new Promise(r=>setTimeout(()=>r(null),8000))]);
- if(f){me=f.uid;ref=f.ref;if(ref.onEmote)ref.onEmote(handleEmote);ref.onSnapshot(sn=>{LAST=sn.exists?sn.data():null;if(!busy){G=LAST;render()}},e=>{err=tl('err_conn');render()})}
+ if(f){me=f.uid;ref=f.ref;if(ref.onEmote)ref.onEmote(handleEmote);ref.onSnapshot(sn=>{SNAPPED=true;LAST=sn.exists?sn.data():null;if(!busy){G=LAST;render()}},e=>{err=tl('err_conn');render()})}
  if(!ref)local=true;render()})();
 
 </script>
@@ -2523,7 +2611,7 @@ function toggleLang(){LANG=LANG==='ar'?'en':'ar';try{localStorage.setItem('lang'
    • State / presence / emotes / time are synchronised through the self-hosted
      relay (server.js) over a WebSocket. No Firebase, no third-party requests.
    ========================================================================== */
-const DISCORD_CLIENT_ID = ""; // <-- paste your Discord Application ID (or use ?client_id=)
+const DISCORD_CLIENT_ID = "1572657975200452739"; // Bank El Haz app id (override with ?client_id=)
 const qp = new URLSearchParams(location.search);
 const inDiscord = qp.has("frame_id") || qp.has("instance_id");
 
@@ -2540,7 +2628,8 @@ const norm = v => {
     tr: v.tr ? { ...v.tr, gp: arr(v.tr.gp), wp: arr(v.tr.wp) } : null };
 };
 
-const uid = "u" + Math.random().toString(36).slice(2, 10);
+let uid = "u" + Math.random().toString(36).slice(2, 10);
+let netStarted = false;
 
 /* ---- lobby bar: who is in the Discord call (from the SDK) ---- */
 function renderParticipants(list) {
@@ -2574,19 +2663,60 @@ function setupDiscordUI(sdk) {
   try { sdk.subscribe("ACTIVITY_INSTANCE_PARTICIPANTS_UPDATE", p => renderParticipants(p.participants || [])); } catch (e) {}
   refresh();
 }
+function discordFail() {
+  window.DISCORD_FAILED = true;
+  try { window.dispatchEvent(new CustomEvent("discord-failed")); } catch (e) {}
+}
+function discordAvatar(u) {
+  if (!u || !u.id) return null;
+  if (u.avatar) {
+    const ext = String(u.avatar).startsWith("a_") ? "gif" : "png";
+    return "/cdn/avatars/" + u.id + "/" + u.avatar + "." + ext + "?size=128";
+  }
+  try {
+    const d = (u.discriminator && u.discriminator !== "0") ? (+u.discriminator % 5) : Number((BigInt(u.id) >> BigInt(22)) % BigInt(6));
+    return "/cdn/embed/avatars/" + d + ".png";
+  } catch (e) { return "/cdn/embed/avatars/0.png"; }
+}
+function setDiscordUser(u) {
+  if (!u || !u.id) return false;
+  if (window.DISCORD_USER && window.DISCORD_USER.id === String(u.id)) { window.DISCORD_FAILED = false; return true; }
+  const name = Array.from(u.global_name || u.username || "Player").slice(0, 14).join("");
+  window.DISCORD_USER = { id: u.id, name: name, avatar: discordAvatar(u) };
+  window.DISCORD_MODE = true;
+  window.DISCORD_FAILED = false;
+  // use the Discord id as our presence/player id so a refresh keeps the same seat
+  if (!netStarted) uid = "d" + u.id;
+  try { window.dispatchEvent(new CustomEvent("discord-ready")); } catch (e) {}
+  return true;
+}
 async function setupSdk() {
   if (!inDiscord) return null;
   try {
     const mod = await import("./vendor/discord-sdk.js");
     const DiscordSDK = mod.DiscordSDK || (mod.default && mod.default.DiscordSDK);
     const clientId = qp.get("client_id") || DISCORD_CLIENT_ID;
-    if (!clientId) return null;
+    if (!clientId) { discordFail(); return null; }
     const sdk = new DiscordSDK(clientId);
-    await Promise.race([sdk.ready(), new Promise((_, rej) => setTimeout(() => rej(new Error("sdk timeout")), 4000))]);
+    // the READY payload carries the current Discord user (no OAuth backend needed)
+    let readyUser = null;
+    try { sdk.subscribe("READY", d => { if (d && d.user) readyUser = d.user; }); } catch (e) {}
+    // if the handshake lands after our timeout, still pick up the user
+    sdk.ready().then(d => { if (!window.DISCORD_USER && d && d.user) setDiscordUser(d.user); }).catch(() => {});
+    const readyData = await Promise.race([sdk.ready(), new Promise((_, rej) => setTimeout(() => rej(new Error("sdk timeout")), 4000))]);
+    if (!readyUser && readyData && readyData.user) readyUser = readyData.user;
+    if (!setDiscordUser(readyUser)) {
+      // fallback: if exactly one human is in the call, that is us
+      try {
+        const r = await sdk.commands.getActivityInstanceConnectedParticipants();
+        const ps = (r.participants || []).filter(p => !p.bot);
+        if (ps.length === 1) setDiscordUser(ps[0]); else discordFail();
+      } catch (e) { discordFail(); }
+    }
     window.__DISCORD_SDK = sdk;
     setupDiscordUI(sdk);
     return sdk;
-  } catch (e) { console.warn("[discord]", (e && e.message) || e); return null; }
+  } catch (e) { console.warn("[discord]", (e && e.message) || e); discordFail(); return null; }
 }
 
 /* ---- WebSocket relay wiring ---- */
@@ -2595,7 +2725,7 @@ let snapshotCb = null, errCb = null, emoteCb = null, pending = null;
 
 function connectRelay(room) {
   const proto = location.protocol === "https:" ? "wss" : "ws";
-  const url = proto + "://" + location.host + "/ws?room=" + encodeURIComponent(room);
+  const url = proto + "://" + location.host + "/ws?room=" + encodeURIComponent(room) + "&uid=" + encodeURIComponent(uid);
   ws = new WebSocket(url);
   ws.onmessage = (ev) => {
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
@@ -2650,14 +2780,15 @@ function maybeResolve() {
   // no Discord and no explicit room → single-device (local) mode
   if (!inDiscord && !qp.get("room") && !qp.get("instance_id")) { window.netResolve(null); return; }
 
-  const sdkPromise = setupSdk();
+  // wait for the SDK first: it sets our Discord identity (and uid) before we connect
+  const sdk = await Promise.race([setupSdk(), new Promise(r => setTimeout(() => r(null), 4500))]);
   let room = qp.get("room") || null;
   if (!room) {
-    const sdk = await Promise.race([sdkPromise, new Promise(r => setTimeout(() => r(null), 4500))]);
     if (sdk && sdk.channelId) room = "ch_" + sdk.channelId;
     else room = qp.get("instance_id") || "lobby";
   }
   window.ROOM = room;
+  netStarted = true;
   connectRelay(room);
 })();
 </script>

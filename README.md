@@ -76,12 +76,18 @@ npm start            # serves the game + WebSocket relay on http://localhost:300
 **2. Create the Discord application**
 - Discord Developer Portal → **New Application**.
 - **Activities → Settings** → turn on **Enable Activities**.
-- **Activities → URL Mappings** → add one mapping: Prefix `/` → Target `<your-relay-host>`
-  (e.g. `bank-el-haz.onrender.com`, no `https://`). Nothing else is needed — every request is
-  same-origin (the Discord SDK, fonts and images are local).
+- **Activities → URL Mappings** → add two mappings to the same host: Prefix `/` → Target
+  `<your-relay-host>` (e.g. `bank-el-haz.onrender.com`, no `https://`), and Prefix `/cdn` →
+  the same target. The relay proxies Discord avatars through `/cdn`, so the game itself only
+  ever makes same-origin requests.
 - **OAuth2 → Redirects** → add `https://127.0.0.1` as a placeholder.
-- Copy the **Application ID** into `DISCORD_CLIENT_ID` near the bottom of `index.html`
-  (or append `?client_id=…` to the activity URL).
+- `DISCORD_CLIENT_ID` is pre-filled with the Bank El Haz application id near the bottom of
+  `index.html`; change it (or append `?client_id=…`) if you run your own application.
+
+Players join automatically: the app reads the current Discord user from the Embedded App SDK's
+`READY` event (no OAuth token exchange needed) and drops them into the lobby with their Discord
+display name and avatar. Their Discord id is also used as their player id, so a refresh keeps
+their seat. If the SDK is unavailable the normal name field is shown instead.
 
 **3. Serve over HTTPS**
 The Discord proxy only speaks HTTPS, so host the relay somewhere that terminates TLS — Render,

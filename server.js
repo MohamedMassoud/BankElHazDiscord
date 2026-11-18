@@ -40,7 +40,26 @@ const MIME = {
 /* ----------------------------- static files ----------------------------- */
 const server = http.createServer((req, res) => {
   try {
-    let urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+    const rawPath = (req.url || '/').split('?')[0];
+    // Discord avatars, proxied same-origin so the activity CSP always allows them
+    if (rawPath.startsWith('/cdn/')) {
+      const p = rawPath.slice(4); // strip "/cdn", keep the leading slash
+      const ok = /^\/avatars\/\d+\/[A-Za-z0-9_-]+\.(png|gif|jpg|jpeg|webp)$/.test(p) ||
+                 /^\/embed\/avatars\/\d+\.png$/.test(p);
+      if (!ok) { res.writeHead(400); res.end('bad request'); return; }
+      fetch('https://cdn.discordapp.com' + p, { signal: AbortSignal.timeout(8000) })
+        .then(r => {
+          if (!r.ok) { res.writeHead(404); res.end('not found'); return; }
+          res.writeHead(200, {
+            'Content-Type': r.headers.get('content-type') || 'image/png',
+            'Cache-Control': 'public, max-age=86400',
+          });
+          r.arrayBuffer().then(b => res.end(Buffer.from(b))).catch(() => res.end());
+        })
+        .catch(() => { res.writeHead(502); res.end('bad gateway'); });
+      return;
+    }
+    let urlPath = decodeURIComponent(rawPath);
     if (urlPath === '/') urlPath = '/index.html';
     // block path traversal, then resolve inside ROOT
     const filePath = path.normalize(path.join(ROOT, urlPath));
@@ -83,16 +102,26 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 
 wss.on('connection', (ws, req) => {
   let roomId = 'lobby';
-  try { roomId = new URL(req.url, 'http://x').searchParams.get('room') || 'lobby'; } catch (e) {}
-  const uid = 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  let uid = '';
+  try {
+    const q = new URL(req.url, 'http://x').searchParams;
+    roomId = q.get('room') || 'lobby';
+    uid = q.get('uid') || '';
+  } catch (e) {}
+  if (!uid) uid = 'u' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
   const room = roomOf(roomId);
   ws.roomId = roomId; ws.uid = uid; ws.alive = true;
   room.clients.add(ws); room.presence.add(uid);
+  // a reconnect/refresh with the same id (Discord user id) replaces the old socket
+  for (const c of room.clients) if (c !== ws && c.uid === uid) { try { c.close(); } catch (e) {} }
 
   ws.on('pong', () => { ws.alive = true; });
   ws.on('error', () => {});
   ws.on('close', () => {
-    room.clients.delete(ws); room.presence.delete(uid);
+    room.clients.delete(ws);
+    let stillHere = false;
+    for (const c of room.clients) if (c.uid === uid) { stillHere = true; break; }
+    if (!stillHere) room.presence.delete(uid);
     broadcast(room, presencePayload(room));
     if (room.clients.size === 0) rooms.delete(roomId);
   });
@@ -101,6 +130,11 @@ wss.on('connection', (ws, req) => {
     if (!m || typeof m.t !== 'string') return;
 
     if (m.t === 'set') {
+      // validate: a malformed payload must never take the relay down
+      if (!m.state || typeof m.state !== 'object' || Array.isArray(m.state) || !Number.isFinite(m.v)) {
+        send(ws, { t: 'reject', v: m.v, cur: room.state ? room.state.v : 0 });
+        return;
+      }
       const next = (room.state ? room.state.v : 0) + 1;
       // optimistic concurrency: accept only the expected next version
       if (m.v === next) {
@@ -111,15 +145,16 @@ wss.on('connection', (ws, req) => {
         send(ws, { t: 'reject', v: m.v, cur: room.state ? room.state.v : 0 });
       }
     } else if (m.t === 'emote') {
-      broadcast(room, { t: 'emote', e: m.e }, ws);
+      if (Number.isFinite(m.e)) broadcast(room, { t: 'emote', e: m.e }, ws);
     } else if (m.t === 'ping') {
       send(ws, { t: 'pong', ts: m.ts });
     }
   });
 
-  // initial sync: current state + presence + server time
+  // initial sync: current state + presence + server time (presence goes to everyone,
+  // so players already here see the newcomer immediately)
   send(ws, { t: 'init', state: room.state, ts: Date.now() });
-  send(ws, presencePayload(room));
+  broadcast(room, presencePayload(room));
 });
 
 // drop dead sockets
