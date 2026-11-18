@@ -1,0 +1,27 @@
+{
+  "rules": {
+    "rooms": {
+      ".read": "auth != null && auth.uid === \"QHCfMfHTU7atM8mL5OGs2NpN3qn2\"",
+      "$room": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "$room.matches(/^[a-zA-Z0-9_-]{1,20}$/)"
+      }
+    },
+    "fx": {
+      ".read": "auth != null && auth.uid === \"QHCfMfHTU7atM8mL5OGs2NpN3qn2\"",
+      "$room": {
+        ".read": "auth != null",
+        ".write": "auth != null",
+        ".validate": "$room.matches(/^[a-zA-Z0-9_-]{1,20}$/)"
+      }
+    },
+    "presence": {
+      ".read": "auth != null && auth.uid === \"QHCfMfHTU7atM8mL5OGs2NpN3qn2\"",
+      "$room": {
+        ".read": "auth != null",
+        "$uid": { ".write": "auth != null && auth.uid === $uid" }
+      }
+    }
+  }
+}

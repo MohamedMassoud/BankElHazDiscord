@@ -1,0 +1,12 @@
+{
+  "name": "bank-el-haz",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bank El Haz — Discord Activity (self-hosted relay, no third-party services)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
