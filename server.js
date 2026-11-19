@@ -132,7 +132,11 @@ function readBody(req, cb) {
   req.on('error', () => { if (!done) cb(''); });
 }
 function handleRelayHttp(req, res, rawPath) {
-  if (rawPath !== '/state' && rawPath !== '/set' && rawPath !== '/emote') return false;
+  if (rawPath !== '/state' && rawPath !== '/set' && rawPath !== '/emote' && rawPath !== '/health') return false;
+  if (rawPath === '/health') {
+    sendJSON(res, 200, { ok: true, rooms: rooms.size, ts: Date.now() });
+    return true;
+  }
   let q; try { q = new URL(req.url, 'http://x').searchParams; } catch (e) { return true; }
   const roomId = q.get('room') || 'lobby';
   const uid = (q.get('uid') || 'anon').slice(0, 120);

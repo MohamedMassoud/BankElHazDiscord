@@ -2608,7 +2608,7 @@ function updateNetStat(){
  el.className=st==='open'?'on':(st==='closed'||st==='error'?'off':'');
  const peers=window.__NET_PEERS||0;
  const label=st==='open'?(LANG==='ar'?'متصل':'Live'):(st==='closed'||st==='error'?(LANG==='ar'?'مقطوع':'Offline'):(LANG==='ar'?'جاري الاتصال':'Connecting'));
- el.title=label+(peers?' · '+peers+' '+(LANG==='ar'?'هنا':'here'):'');
+ el.title=label+(peers?' · '+peers+' '+(LANG==='ar'?'هنا':'here'):'')+(window.__NET_ERR?' · '+window.__NET_ERR:'');
 }
 window.onPres=o=>{PRES=o;window.__NET_PEERS=Object.keys(o||{}).length;updateNetStat();render()};
 function applyLang(){
@@ -2625,7 +2625,8 @@ function toggleLang(){LANG=LANG==='ar'?'en':'ar';try{localStorage.setItem('lang'
  applyLang();loadImgs();loadSheetCfg();buildEmoteBar();
  function showConnError(){
   const app=document.getElementById('app');
-  if(app)app.innerHTML='<div class="panel"><b>'+esc(tl('err_conn'))+'</b><p><small>'+esc(LANG==='ar'?'تأكد إن السيرفر شغال واللينك عام. النقطة الحمراء في الشريط معناها مفيش اتصال.':'Check that the relay is running and the link is public. A red dot in the top bar means no connection.')+'</small></p></div>';
+  const detail=[window.__NET_ERR,location.host].filter(Boolean).join(' · ');
+  if(app)app.innerHTML='<div class="panel"><b>'+esc(tl('err_conn'))+'</b><p><small>'+esc(LANG==='ar'?'تأكد إن السيرفر شغال واللينك عام. النقطة الحمراء في الشريط معناها مفيش اتصال.':'Check that the relay is running and the link is public. A red dot in the top bar means no connection.')+'</small></p>'+(detail?'<p><small>'+esc(detail)+'</small></p>':'')+'</div>';
  }
  function initNet(f){
   if(f){me=f.uid;ref=f.ref;if(ref.onEmote)ref.onEmote(handleEmote);ref.onSnapshot(sn=>{SNAPPED=true;LAST=sn.exists?sn.data():null;if(!busy){G=LAST;render()}},e=>{err=tl('err_conn');render()})}
@@ -2804,7 +2805,7 @@ function startPolling(room) {
       if (first) pollCv = d.cv || 0;
       else { for (const e of (d.emotes || [])) { if (e.uid === uid) continue; if (emoteCb) emoteCb(e.e); } pollCv = d.cv || pollCv; }
       setNet("open");
-    } catch (e) { setNet("error"); }
+    } catch (e) { window.__NET_ERR = "poll: " + ((e && e.message) || "failed"); setNet("error"); }
     if (polling) pollTimer = setTimeout(tick, 1000);
   };
   tick();
@@ -2847,6 +2848,7 @@ function connectRelay(room) {
     }
   };
   ws.onclose = () => {
+    window.__NET_ERR = "ws: closed";
     setNet("closed");
     if (errCb) { try { errCb(); } catch (e) {} }
     if (pending) { const p = pending; pending = null; p.reject(new Error("offline")); }
@@ -2854,7 +2856,7 @@ function connectRelay(room) {
     startPolling(room);
     if (opened) setTimeout(() => connectRelay(room), 1500);
   };
-  ws.onerror = () => { setNet("error"); if (!opened) startPolling(room); };
+  ws.onerror = () => { window.__NET_ERR = "ws: error"; setNet("error"); if (!opened) startPolling(room); };
   setTimeout(() => { if (!opened) startPolling(room); }, 3000);
 }
 
