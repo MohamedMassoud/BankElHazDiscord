@@ -1677,7 +1677,7 @@ function mgInfo(k){return tl('mginfo',mval(k),ucost(k))}
 function myIdx(s){return s.P.findIndex(p=>p.id===me&&!p.bot)}
 // ===== board =====
 function board(s){
- let h='';const sg=BUY(S[CARD])?new Set(grpMembers(CARD)):null;
+ let h='';const sg=(CARD>=0&&BUY(S[CARD]))?new Set(grpMembers(CARD)):null;
  for(let i=0;i<N;i++){
   const q=S[i],[r,c]=posOf(i),o=s.O[i],by=BUY(q),ow=by&&o!=null?s.P[o]:null,oc=ow?PC[ow.c]:'',hs=hh(s,i),m=ow&&mg(s,i),
    full=ow&&q[1]==='p'&&GRP[q[3]].every(x=>s.O[x]===o),
@@ -1693,7 +1693,8 @@ function strip(s){
   const pos=posNow(s,i),w=worth(s,i),isT=i===s.t&&s.w==null;
   return `<span class="pch${isT?' turn':''}" style="--oc:${PC[p.c]}" data-onclick="pick(${pos})">${tok(p)}<b>${esc(p.n)}</b>${isT&&s.dl?' <span class="cd"></span>':''}<small>📍 ${iconOf(pos)} ${esc(sn(pos))} · 💎 ${w.total}</small></span>`}).join('')+'</div>'}
 function pcard(s){
- const q=S[CARD],by=BUY(q),o=by?s.O[CARD]:undefined,ow=o!=null?s.P[o]:null;let d='';
+  if(CARD<0||!S[CARD])return '';
+ const q=CARD>=0?S[CARD]:['', '', '', ''];const by=BUY(q),o=by?s.O[CARD]:undefined,ow=o!=null?s.P[o]:null;let d='';
  if(by)d=ow?`<span class="ob2" style="background:${PC[ow.c]}">${esc(ini(ow.n))}</span> ${esc(ow.n)} — ${mg(s,CARD)?tl('mortgaged'):tl('rent_n',rentOf(s,CARD,7))}${hh(s,CARD)?' · '+(hh(s,CARD)>=5?'🏨':'🏠'.repeat(hh(s,CARD))):''}${(s.V&&s.V[CARD])?' 📈×'+s.V[CARD]:''}`:tl('forsale',q[2]);
  return `<div class="pcard" data-onclick="pick(${CARD})">${IMG[CARD]?`<img src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><div>${iconOf(CARD)} ${esc(sn(CARD))}</div><div class="pd">${d}</div></div></div>`}
 let HL=null;
@@ -1704,8 +1705,9 @@ function focusSq(i){if(window.innerWidth>=900)return;if(!document.querySelector)
  const r=e.getBoundingClientRect(),c=document.querySelector('.ctl'),lim=c&&innerWidth<900?c.getBoundingClientRect().top:innerHeight;
  if(r.top<50||r.bottom>lim-10)e.scrollIntoView({block:'center',behavior:'smooth'})}
 const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
-function sqPanel(s){
- const q=S[CARD];if(!BUY(q))return '';
+ function sqPanel(s){
+  if(CARD<0||!S[CARD])return '';
+  const q=S[CARD];if(!BUY(q))return '';
  const o=s.O[CARD],ow=o!=null?s.P[o]:null,i=s.t,p=s.P[i],R=RN[CARD];
   const mineP=ow&&!ow.bot&&(local||ow.id===me),can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===i));
   let h=`<div class="panel sqp"><button class="s" style="float:inline-end;min-height:24px;padding:0 8px" data-onclick="closeSq()">✕</button>`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
@@ -1915,7 +1917,7 @@ function mgInfo(k){return tl('mginfo',mval(k),ucost(k))}
 function myIdx(s){return s.P.findIndex(p=>p.id===me&&!p.bot)}
 // ===== board =====
 function board(s){
- let h='';const sg=BUY(S[CARD])?new Set(grpMembers(CARD)):null;
+ let h='';const sg=(CARD>=0&&BUY(S[CARD]))?new Set(grpMembers(CARD)):null;
  for(let i=0;i<N;i++){
   const q=S[i],[r,c]=posOf(i),o=s.O[i],by=BUY(q),ow=by&&o!=null?s.P[o]:null,oc=ow?PC[ow.c]:'',hs=hh(s,i),m=ow&&mg(s,i),
    full=ow&&q[1]==='p'&&GRP[q[3]].every(x=>s.O[x]===o),
@@ -1931,7 +1933,8 @@ function strip(s){
   const pos=posNow(s,i),w=worth(s,i),isT=i===s.t&&s.w==null;
   return `<span class="pch${isT?' turn':''}" style="--oc:${PC[p.c]}" data-onclick="pick(${pos})">${tok(p)}<b>${esc(p.n)}</b>${isT&&s.dl?' <span class="cd"></span>':''}<small>📍 ${iconOf(pos)} ${esc(sn(pos))} · 💎 ${w.total}</small></span>`}).join('')+'</div>'}
 function pcard(s){
- const q=S[CARD],by=BUY(q),o=by?s.O[CARD]:undefined,ow=o!=null?s.P[o]:null;let d='';
+  if(CARD<0||!S[CARD])return '';
+ const q=CARD>=0?S[CARD]:['', '', '', ''];const by=BUY(q),o=by?s.O[CARD]:undefined,ow=o!=null?s.P[o]:null;let d='';
  if(by)d=ow?`<span class="ob2" style="background:${PC[ow.c]}">${esc(ini(ow.n))}</span> ${esc(ow.n)} — ${mg(s,CARD)?tl('mortgaged'):tl('rent_n',rentOf(s,CARD,7))}${hh(s,CARD)?' · '+(hh(s,CARD)>=5?'🏨':'🏠'.repeat(hh(s,CARD))):''}${(s.V&&s.V[CARD])?' 📈×'+s.V[CARD]:''}`:tl('forsale',q[2]);
  return `<div class="pcard" data-onclick="pick(${CARD})">${IMG[CARD]?`<img src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:''}<div><div>${iconOf(CARD)} ${esc(sn(CARD))}</div><div class="pd">${d}</div></div></div>`}
 let HL=null;
@@ -1942,8 +1945,9 @@ function focusSq(i){if(window.innerWidth>=900)return;if(!document.querySelector)
  const r=e.getBoundingClientRect(),c=document.querySelector('.ctl'),lim=c&&innerWidth<900?c.getBoundingClientRect().top:innerHeight;
  if(r.top<50||r.bottom>lim-10)e.scrollIntoView({block:'center',behavior:'smooth'})}
 const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
-function sqPanel(s){
- const q=S[CARD];if(!BUY(q))return '';
+ function sqPanel(s){
+  if(CARD<0||!S[CARD])return '';
+  const q=S[CARD];if(!BUY(q))return '';
  const o=s.O[CARD],ow=o!=null?s.P[o]:null,i=s.t,p=s.P[i],R=RN[CARD];
   const mineP=ow&&!ow.bot&&(local||ow.id===me),can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===i));
   let h=`<div class="panel sqp"><button class="s" style="float:inline-end;min-height:24px;padding:0 8px" data-onclick="closeSq()">✕</button>`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
