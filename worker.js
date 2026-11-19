@@ -35,7 +35,13 @@ export default {
         return env.ROOMS.get(id).fetch(request);
       }
 
-      return env.ASSETS.fetch(request);
+      const asset = await env.ASSETS.fetch(request);
+      if (path === '/' || path === '/index.html') {
+        const h = new Headers(asset.headers);
+        h.set('Cache-Control', 'no-store');
+        return new Response(asset.body, { status: asset.status, headers: h });
+      }
+      return asset;
     } catch (e) {
       return new Response('relay error: ' + ((e && e.message) || e), { status: 500 });
     }
