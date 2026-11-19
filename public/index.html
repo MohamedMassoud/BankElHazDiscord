@@ -961,7 +961,7 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
   .sq .ph{inset:0;width:100%;height:100%;margin:0;opacity:1;}
   .sq b,.sq span,.sq small,.sq .ob,.sq .fr,.sq .hs,.sq .gb,.sq .tk,.sq .rt{position:relative;z-index:3;}
   .sq b{font-size:clamp(9px,3.4cqw,18px);line-height:1;text-shadow:0 1px 3px #000;}
-  .sq span{font-size:clamp(7px,2.4cqw,14px);line-height:1.15;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8);}
+  .sq span{font-size:clamp(7px,2.4cqw,14px);line-height:1.15;overflow-wrap:anywhere;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8);}
   .sq small{font-size:clamp(6px,1.9cqw,11px);text-shadow:0 1px 2px #000;}
   .sq:has(.ph):after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.75));z-index:1;pointer-events:none;}
   .sq:has(.ph) b{display:none;}
@@ -1573,8 +1573,37 @@ function render(){
  // If the relay's presence keys don't match our player ids (e.g. an older server),
  // ignore presence instead of marking everyone as disconnected.
  if(PRES&&G&&G.P&&G.P.length&&!G.P.some(p=>PRES[p.id]))PRES=null;
- (THEMES[UI]||THEMES.classic).render(); maybeAutoJoin(); }
+ (THEMES[UI]||THEMES.classic).render(); fitCardText(); maybeAutoJoin(); }
 function closeSq(){CARD=-1;render()}
+// shrink each square's name/price until it fits inside the card (never clipped)
+function fitCardText(){
+ if(!document.querySelectorAll)return;
+ const cards=document.querySelectorAll('.sq');
+ for(const sq of cards){
+  const span=sq.querySelector('span'); if(!span)continue;
+  const small=sq.querySelector('small:not(.rt)');
+  const rt=sq.querySelector('.rt');
+  const icon=sq.querySelector('b');
+  const iconH=(icon&&getComputedStyle(icon).display!=='none')?icon.getBoundingClientRect().height:0;
+  const avail=Math.max(10, sq.clientHeight - 6 - (rt?rt.offsetHeight+1:0) - iconH);
+  let size=14;
+  const apply=s=>{ span.style.fontSize=s+'px'; if(small) small.style.fontSize=Math.max(4.5,s-2)+'px'; };
+  apply(size);
+  let guard=0;
+  while(size>5 && guard++<40){
+   const h=span.getBoundingClientRect().height + (small?small.getBoundingClientRect().height:0);
+   if(h<=avail)break;
+   size-=0.5; apply(size);
+  }
+  // final safety: use the card's real scroll height (covers every in-flow line)
+  let guard2=0;
+  while(size>5 && sq.scrollHeight>sq.clientHeight+1 && guard2++<30){
+   size-=0.5; apply(size);
+  }
+ }
+}
+window.addEventListener('resize',function(){clearTimeout(window.__FIT_T);window.__FIT_T=setTimeout(fitCardText,150)});
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitCardText);
 function fmtLog(e,h){ var f=(THEMES[UI]||THEMES.classic).fmtLog; return f?f(e,h):''; }
 function gone(p){ var g=(THEMES[UI]||THEMES.classic).gone; return g?g(p):false; }
 function themeLabel(t){ return t==='classic'?'Classic':t==='midnight'?'Midnight':'Atlas'; }
