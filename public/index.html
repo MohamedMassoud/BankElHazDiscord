@@ -80,7 +80,7 @@ input[type=number]{width:110px}
 .mid{grid-area:2/2/13/13;overflow:hidden}
 .gm{display:block}
 .bcol,.scol{min-width:0}
-@media (min-width:900px){.gm{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}.scol .panel:first-child{margin-top:0}.ctl{position:sticky;top:8px;z-index:30}}
+@media (min-width:900px){.gm{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}.scol .panel:first-child{margin-top:0}.ctl{position:static;z-index:auto}}
 @media (max-width:899px){.ctl{position:sticky;bottom:calc(env(safe-area-inset-bottom,0px) + 6px);z-index:30;box-shadow:0 -4px 14px rgba(0,0,0,.28);max-height:52dvh;overflow:auto}}
 .sq{cursor:pointer;font-size:clamp(4.5px,1.25vw,9px)}
 .sq b{font-size:clamp(9px,2.6vw,20px)}
@@ -262,7 +262,7 @@ body::before{
 #lg{position:static;inset:auto;margin:0;min-height:40px;height:40px;padding:0 14px;border-radius:12px;font-size:14px;box-shadow:var(--sh-sm)}
 .np{max-width:30vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--mut)}
 @media (max-width:700px){.np{display:none}}
-@media (min-width:900px){.ctl{position:sticky;top:74px;z-index:30}}
+@media (min-width:900px){.ctl{position:static;z-index:auto}}
 /* ---- gold board frame ---- */
 .board{
   border:3px solid transparent;
@@ -996,7 +996,7 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 </style>
 </head><body>
 <div id="dcppl" class="dcppl" hidden></div>
-<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="mu" class="iconbtn" data-onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span><span id="netstat" title="Connecting…"></span><button id="lg" class="s" data-onclick="toggleLang()">EN</button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button></div></header>
+<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="lg" class="s" data-onclick="toggleLang()">EN</button><span id="netstat" title="Connecting…"></span><button id="mu" class="iconbtn" data-onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span></div></header>
 <div id="toast"></div><div id="app"><p>جاري الاتصال…</p></div>
 <script>
 
