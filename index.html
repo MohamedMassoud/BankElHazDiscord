@@ -902,13 +902,17 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 .dcppl b{font-weight:800;opacity:.9;margin-inline-end:2px}
 .dcppl .pc{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.13);font-weight:600}
 .dcppl .pc .dot{width:7px;height:7px;border-radius:50%;background:#3ba55d;flex:0 0 auto}
+/* relay connection dot (green = live, red = offline, amber = connecting) */
+#netstat{display:inline-block;width:9px;height:9px;border-radius:50%;background:#f4a300;box-shadow:0 0 0 2px rgba(0,0,0,.18);vertical-align:middle;flex:0 0 auto}
+#netstat.on{background:#3ba55d}
+#netstat.off{background:#e63946}
 /* Discord avatars on player tokens (initial stays underneath as a fallback) */
 .tok,.token,.tk u{position:relative}
 .tok img.tokav,.token img.tokav,.tk u img.tokav{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 </style>
 </head><body>
 <div id="dcppl" class="dcppl" hidden></div>
-<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="mu" class="iconbtn" data-onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span><button id="lg" class="s" data-onclick="toggleLang()">EN</button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button></div></header>
+<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="mu" class="iconbtn" data-onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span><span id="netstat" title="Connecting…"></span><button id="lg" class="s" data-onclick="toggleLang()">EN</button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button></div></header>
 <div id="toast"></div><div id="app"><p>جاري الاتصال…</p></div>
 <script>
 
@@ -1474,6 +1478,16 @@ function maybeAutoJoin(){
 window.addEventListener('discord-ready',function(){render()});
 window.addEventListener('discord-failed',function(){render()});
 function joinDiscord(){if(window.DISCORD_USER)act('join',window.DISCORD_USER.name)}
+function joinRoom(){
+ const el=document.getElementById('joinroom');const v=(el&&el.value||'').trim();if(!v)return;
+ const u=new URL(location.href);u.searchParams.set('room',v);location.href=u.toString();
+}
+function roomJoinHTML(){
+ if(local)return '';
+ return '<div style="display:flex;gap:6px;margin-top:6px;align-items:center;flex-wrap:wrap">'+
+  '<input id="joinroom" placeholder="'+(LANG==='ar'?'كود غرفة صاحبك':'Friend room code')+'" maxlength="80" style="flex:1;min-width:120px">'+
+  '<button class="s" style="min-height:34px;padding:2px 12px" data-onclick="joinRoom()">'+(LANG==='ar'?'ادخل الغرفة':'Join room')+'</button></div>';
+}
 function discordJoinHTML(){
  if(!window.DISCORD_MODE||window.DISCORD_FAILED)return null;
  const u=window.DISCORD_USER;
@@ -1487,7 +1501,11 @@ function discordJoinHTML(){
 let UI='classic';
 const THEMES={};
 var TD=null;
-function render(){ (THEMES[UI]||THEMES.classic).render(); maybeAutoJoin(); }
+function render(){
+ // If the relay's presence keys don't match our player ids (e.g. an older server),
+ // ignore presence instead of marking everyone as disconnected.
+ if(PRES&&G&&G.P&&G.P.length&&!G.P.some(p=>PRES[p.id]))PRES=null;
+ (THEMES[UI]||THEMES.classic).render(); maybeAutoJoin(); }
 function fmtLog(e,h){ var f=(THEMES[UI]||THEMES.classic).fmtLog; return f?f(e,h):''; }
 function gone(p){ var g=(THEMES[UI]||THEMES.classic).gone; return g?g(p):false; }
 function themeLabel(t){ return t==='classic'?'Classic':t==='midnight'?'Midnight':'Atlas'; }
@@ -1693,7 +1711,7 @@ function renderClassic(){
   const P2=s?s.P:[];if(LPN>=0&&P2.length>LPN)sfx('join');LPN=P2.length;
   const joined=P2.some(x=>x.id===me);
   h+=`<div class="panel">${poster()}<b>${tl('lobby')}</b> <br><small>${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s" style="min-height:30px;padding:2px 10px;font-size:12px" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}`;
-  if(!local)h+=`<div><small>${tl('roomcode','<b>'+esc(window.ROOM||ROOM)+'</b>')}</small><input readonly value="${esc(location.href)}" data-onclick="this.select()" style="width:100%;margin:4px 0"></div>`;
+  if(!local)h+=`<div><small>${tl('roomcode','<b>'+esc(window.ROOM||ROOM)+'</b>')}</small><input readonly value="${esc(location.href)}" data-onclick="this.select()" style="width:100%;margin:4px 0"></div>`+roomJoinHTML();
   h+=P2.map((p,i)=>`<div class="pl">${tok(p)}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?` <button class="s" style="min-height:24px;padding:0 8px;font-size:12px" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:30px;padding:2px 10px" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
   if(!joined&&P2.length<6){const dj=discordJoinHTML();if(dj)h+=dj;else h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--bd,#999);border-radius:14px"><div style="display:flex;gap:8px"><input id="nm" placeholder="${tl('yourname')}" maxlength="14" style="flex:1;min-width:0"> <button data-onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;}
 
@@ -1932,7 +1950,7 @@ function renderMidnight(){
   const joined=P2.some(x=>x.id===me);
   h+=`<div class="lobby"><div class="panel lobbycard"><div class="herowrap">${poster()}</div>`;
   h+=`<div class="lobbymeta"><b>${tl('lobby')}</b> <br><small class="cfg">${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s mini" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}</div>`;
-  if(!local)h+=`<div class="roombox"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" data-onclick="this.select()"></div>`;
+  if(!local)h+=`<div class="roombox"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" data-onclick="this.select()"></div>`+roomJoinHTML();
   h+=`<div class="seats">`;
   h+=P2.map((p,i)=>`<div class="seat">${tok(p)}${hostId(s)===p.id?'<span class="crown">👑</span>':''}<span class="seatname">${esc(p.n)}</span>${p.id===me?` <button class="s mini" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s mini" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
   h+=`</div>`;
@@ -2240,7 +2258,7 @@ function renderAtlas(){
   h+=`<div class="lobby"><div class="card journeycard"><div class="herowrap">${poster()}</div>`;
   h+=`<div class="jmeta"><b>${tl('lobby')}</b></div>`;
   h+=`<div class="jcfg"><small>${esc(tl(...CFGK))}</small>${SHEET_ID?`<button class="s mini" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}</div>`;
-  if(!local)h+=`<div class="jroom"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" data-onclick="this.select()"></div>`;
+  if(!local)h+=`<div class="jroom"><small>${tl('roomcode','<b class="roomcode">'+esc(window.ROOM||ROOM)+'</b>')}</small><input class="link" readonly value="${esc(location.href)}" data-onclick="this.select()"></div>`+roomJoinHTML();
   h+=`<div class="manifest">`;
   h+=P2.map((p,i)=>`<div class="manifestRow">${tok(p)}${hostId(s)===p.id?'<span class="crown">👑</span>':''}<span class="mname">${esc(p.n)}</span>${p.id===me?` <button class="s mini" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s mini" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
   h+=`</div>`;
@@ -2584,7 +2602,15 @@ function tickCd(){const s=G;if(!s||!s.st||s.w!=null||!s.dl||!document.querySelec
 let TKT=0;const JIT=Math.random()*3000;
 function tickTimer(){const s=G;if(!s||!s.st||s.w!=null||busy||MOVING||!s.dl)return;const t=Date.now();if(t-TKT<700)return;TKT=t;
  const over=now()-s.dl;if(over<1000)return;if(local||driverId(s)===me||over>5000+JIT)act('timeout')}
-window.onPres=o=>{PRES=o;render()};
+function updateNetStat(){
+ const el=document.getElementById('netstat');if(!el)return;
+ const st=window.__NET_STATE||'connecting';
+ el.className=st==='open'?'on':(st==='closed'||st==='error'?'off':'');
+ const peers=window.__NET_PEERS||0;
+ const label=st==='open'?(LANG==='ar'?'متصل':'Live'):(st==='closed'||st==='error'?(LANG==='ar'?'مقطوع':'Offline'):(LANG==='ar'?'جاري الاتصال':'Connecting'));
+ el.title=label+(peers?' · '+peers+' '+(LANG==='ar'?'هنا':'here'):'');
+}
+window.onPres=o=>{PRES=o;window.__NET_PEERS=Object.keys(o||{}).length;updateNetStat();render()};
 function applyLang(){
  const h=document.documentElement;h.lang=LANG;h.dir=LANG==='ar'?'rtl':'ltr';h.style.setProperty('--txtdir',h.dir);
  document.title=tl('title');
@@ -2597,9 +2623,27 @@ function toggleLang(){LANG=LANG==='ar'?'en':'ar';try{localStorage.setItem('lang'
 // ===== start =====
 (async()=>{
  applyLang();loadImgs();loadSheetCfg();buildEmoteBar();
+ function showConnError(){
+  const app=document.getElementById('app');
+  if(app)app.innerHTML='<div class="panel"><b>'+esc(tl('err_conn'))+'</b><p><small>'+esc(LANG==='ar'?'تأكد إن السيرفر شغال واللينك عام. النقطة الحمراء في الشريط معناها مفيش اتصال.':'Check that the relay is running and the link is public. A red dot in the top bar means no connection.')+'</small></p></div>';
+ }
+ function initNet(f){
+  if(f){me=f.uid;ref=f.ref;if(ref.onEmote)ref.onEmote(handleEmote);ref.onSnapshot(sn=>{SNAPPED=true;LAST=sn.exists?sn.data():null;if(!busy){G=LAST;render()}},e=>{err=tl('err_conn');render()})}
+  if(!ref){if(window.__IN_DISCORD){err=tl('err_conn')}else local=true}
+  render();
+  if(!ref&&window.__IN_DISCORD)showConnError();
+ }
  const f=await Promise.race([window.netReady,new Promise(r=>setTimeout(()=>r(null),8000))]);
- if(f){me=f.uid;ref=f.ref;if(ref.onEmote)ref.onEmote(handleEmote);ref.onSnapshot(sn=>{SNAPPED=true;LAST=sn.exists?sn.data():null;if(!busy){G=LAST;render()}},e=>{err=tl('err_conn');render()})}
- if(!ref)local=true;render()})();
+ if(f)initNet(f);
+ else if(window.__IN_DISCORD){
+  // don't silently fall back to local play: keep the relay retrying and show the error
+  if(window.__NET_RESOLVED)initNet(window.__NET_RESOLVED);
+  else {
+   window.addEventListener('net-ready',function(e){initNet(e.detail)},{once:true});
+   err=tl('err_conn');render();showConnError();
+  }
+ } else {local=true;render()}
+})();
 
 </script>
 <script type="module">
@@ -2614,6 +2658,7 @@ function toggleLang(){LANG=LANG==='ar'?'en':'ar';try{localStorage.setItem('lang'
 const DISCORD_CLIENT_ID = "1572657975200452739"; // Bank El Haz app id (override with ?client_id=)
 const qp = new URLSearchParams(location.search);
 const inDiscord = qp.has("frame_id") || qp.has("instance_id");
+window.__IN_DISCORD = inDiscord;
 
 // restore the state shape the game expects (arrays/objects survive JSON, but
 // keep this so behaviour matches the previous Firebase implementation)
@@ -2719,14 +2764,66 @@ async function setupSdk() {
   } catch (e) { console.warn("[discord]", (e && e.message) || e); discordFail(); return null; }
 }
 
-/* ---- WebSocket relay wiring ---- */
+﻿/* ---- relay wiring: WebSocket with an HTTP polling fallback ---- */
 let ws = null, gotInit = false, buffered = null, resolved = false;
 let snapshotCb = null, errCb = null, emoteCb = null, pending = null;
+let currentRoom = null, pollTimer = null, polling = false, pollV = 0, pollCv = 0;
+const FORCE_POLL = qp.get("poll") === "1" || qp.get("ws") === "0";
+
+function setNet(state) {
+  window.__NET_STATE = state;
+  if (window.updateNetStat) window.updateNetStat();
+}
+
+function startPolling(room) {
+  if (polling) return;
+  polling = true;
+  currentRoom = room;
+  window.__NET_MODE = "poll";
+  const tick = async () => {
+    if (!polling) return;
+    try {
+      const r = await fetch("/state?room=" + encodeURIComponent(room) + "&uid=" + encodeURIComponent(uid) +
+        "&v=" + pollV + "&cv=" + pollCv, { cache: "no-store" });
+      if (!r.ok) throw new Error("http " + r.status);
+      const d = await r.json();
+      const first = !gotInit;
+      if (d.ts) window.SVOFF = d.ts - Date.now();
+      if (d.state) {
+        if (first || d.v !== pollV) {
+          pollV = d.v; buffered = d.state; gotInit = true;
+          if (snapshotCb) snapshotCb({ exists: true, data: () => norm(buffered) });
+          else maybeResolve();
+        }
+      } else if (first) {
+        gotInit = true; buffered = null;
+        if (snapshotCb) snapshotCb({ exists: false, data: () => null });
+        else maybeResolve();
+      }
+      if (d.users && window.onPres) window.onPres(d.users);
+      if (first) pollCv = d.cv || 0;
+      else { for (const e of (d.emotes || [])) { if (e.uid === uid) continue; if (emoteCb) emoteCb(e.e); } pollCv = d.cv || pollCv; }
+      setNet("open");
+    } catch (e) { setNet("error"); }
+    if (polling) pollTimer = setTimeout(tick, 1000);
+  };
+  tick();
+}
+function stopPolling() {
+  polling = false;
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
+}
 
 function connectRelay(room) {
+  currentRoom = room;
+  stopPolling();
+  if (FORCE_POLL) { startPolling(room); return; }
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const url = proto + "://" + location.host + "/ws?room=" + encodeURIComponent(room) + "&uid=" + encodeURIComponent(uid);
-  ws = new WebSocket(url);
+  setNet("connecting");
+  let opened = false;
+  try { ws = new WebSocket(url); } catch (e) { startPolling(room); return; }
+  ws.onopen = () => { opened = true; stopPolling(); window.__NET_MODE = "ws"; setNet("open"); };
   ws.onmessage = (ev) => {
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.t === "init") {
@@ -2750,30 +2847,48 @@ function connectRelay(room) {
     }
   };
   ws.onclose = () => {
+    setNet("closed");
     if (errCb) { try { errCb(); } catch (e) {} }
     if (pending) { const p = pending; pending = null; p.reject(new Error("offline")); }
-    setTimeout(() => connectRelay(room), 1500); // reconnect; server re-sends init
+    // keep the game live over HTTP while the socket reconnects
+    startPolling(room);
+    if (opened) setTimeout(() => connectRelay(room), 1500);
   };
-  ws.onerror = () => {};
+  ws.onerror = () => { setNet("error"); if (!opened) startPolling(room); };
+  setTimeout(() => { if (!opened) startPolling(room); }, 3000);
 }
+
 function maybeResolve() {
   if (resolved || !gotInit) return;
   resolved = true;
+  const post = (path, body) => fetch(path, {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  }).then(r => r.json());
   const ref = {
-    // optimistic concurrency: the relay only accepts the expected next version
     set: s => new Promise((resolve, reject) => {
-      if (!ws || ws.readyState !== 1) { reject(new Error("offline")); return; }
-      pending = { resolve, reject };
-      ws.send(JSON.stringify({ t: "set", v: s.v, state: s }));
+      if (ws && ws.readyState === 1) {
+        pending = { resolve, reject };
+        ws.send(JSON.stringify({ t: "set", v: s.v, state: s }));
+      } else {
+        post("/set", { room: currentRoom, v: s.v, state: s }).then(d => {
+          if (d && d.ok) { if (typeof d.v === "number") pollV = d.v; resolve(); }
+          else reject(new Error("conflict"));
+        }).catch(reject);
+      }
     }),
     onSnapshot: (cb, eb) => {
       snapshotCb = cb; errCb = eb;
       if (gotInit) { const b = buffered; snapshotCb(b ? { exists: true, data: () => norm(b) } : { exists: false, data: () => null }); }
     },
-    emote: p => { try { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ t: "emote", e: p })); } catch (e) {} },
+    emote: p => {
+      if (ws && ws.readyState === 1) { try { ws.send(JSON.stringify({ t: "emote", e: p })); } catch (e) {} }
+      else post("/emote", { room: currentRoom, e: p }).catch(() => {});
+    },
     onEmote: cb => { emoteCb = cb; },
   };
   window.netResolve({ uid, ref });
+  window.__NET_RESOLVED = { uid, ref };
+  try { window.dispatchEvent(new CustomEvent("net-ready", { detail: window.__NET_RESOLVED })); } catch (e) {}
 }
 
 (async () => {
@@ -2784,12 +2899,19 @@ function maybeResolve() {
   const sdk = await Promise.race([setupSdk(), new Promise(r => setTimeout(() => r(null), 4500))]);
   let room = qp.get("room") || null;
   if (!room) {
-    // Discord's docs: everyone in the same activity instance gets the same instanceId.
-    // Keying shared state on it is what keeps friends in one lobby.
+    // instanceId looks like: i-<launch>-gc-<guild>-<channel>  (or i-<launch>-dm-<channel>)
+    const channelFromInstance = (iid) => {
+      const m = /^i-\d+-[a-z]+-/.exec(iid || "");
+      if (!m) return null;
+      const parts = iid.slice(m[0].length).split("-").filter(Boolean);
+      return parts.length ? parts[parts.length - 1] : null;
+    };
+    // Prefer the voice channel so everyone in the same channel shares a lobby; fall back
+    // to the activity instance id (and finally a single "lobby").
     const iid = (sdk && sdk.instanceId) || qp.get("instance_id") || null;
-    const cid = (sdk && sdk.channelId) || qp.get("channel_id") || null;
-    if (iid) room = iid;
-    else if (cid) room = "ch_" + cid;
+    const cid = (sdk && sdk.channelId) || qp.get("channel_id") || channelFromInstance(iid);
+    if (cid) room = "ch_" + cid;
+    else if (iid) room = iid;
     else room = "lobby";
   }
   window.ROOM = room;

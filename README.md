@@ -65,7 +65,9 @@ Enjoy the game! 🎲🏆
 
 The game is a single page (`index.html`) plus a tiny self-hosted relay (`server.js`) that keeps
 players in sync. There are **no third-party services** — the Discord SDK, the Cairo/Amiri fonts and
-all tile images are bundled locally under `vendor/` and `assets/`.
+all tile images are bundled locally under `vendor/` and `assets/`. The client uses a WebSocket when
+available and automatically falls back to same-origin HTTP polling if it can't connect (force it
+with `?poll=1` for testing).
 
 **1. Run the relay**
 ```bash
@@ -103,6 +105,10 @@ nginx + certbot. Point the `/` URL Mapping at that HTTPS host.
 Enable **Developer Mode** in Discord, join a voice channel, open the **rocket / App Launcher** and
 pick the activity. Everyone in that voice channel is dropped into the same game automatically —
 the room is keyed to the channel, and the bar at the bottom shows who's in the call.
+
+The small dot in the top bar is the relay connection: **green = live**, **red = offline**,
+**amber = connecting**. If auto-join doesn't put everyone together, read the room code shown in
+the lobby and have the others type it into the **Friend room code** field and tap **Join room**.
 
 **Local test without Discord:** `npm start`, then open `http://localhost:3000/?room=test` in two
 tabs — they sync through the relay. With no `?room` and no Discord, the game runs single-device.
