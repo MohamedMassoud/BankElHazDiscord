@@ -61,47 +61,45 @@ Enjoy the game! 🎲🏆
 
 ---
 
-## 🛠️ Hosting & Discord setup (for whoever runs the game)
+﻿## 🛠️ Hosting & Discord setup
 
-The game is a single page (`index.html`) plus a tiny self-hosted relay (`server.js`) that keeps
-players in sync. There are **no third-party services** — the Discord SDK, the Cairo/Amiri fonts and
-all tile images are bundled locally under `vendor/` and `assets/`. The client uses a WebSocket when
-available and automatically falls back to same-origin HTTP polling if it can't connect (force it
-with `?poll=1` for testing).
+The game is a static page in `public/` plus a Cloudflare Worker + Durable Object relay (`worker.js`).
+There are **no third-party services** — the Discord SDK, the Cairo/Amiri fonts and all tile images are
+bundled locally under `public/vendor/` and `public/assets/`.
 
-**1. Run the relay**
+**1. Deploy to Cloudflare**
 ```bash
 npm install
-npm start            # serves the game + WebSocket relay on http://localhost:3000
+npx wrangler login
+npx wrangler deploy
 ```
+This serves the game and the relay from your Worker (e.g. `bankelhazdiscord.linkman44.workers.dev`).
+Each room is a **Durable Object** (`RoomDO` in `worker.js`) that owns the game state, presence and
+WebSocket connections. The first deploy creates the `RoomDO` Durable Object (confirm the migration
+prompt if Wrangler asks). The Worker name in `wrangler.toml` is `bankelhazdiscord`; if you change it,
+update the URL Mapping too.
 
 **2. Create the Discord application**
 - Discord Developer Portal → **New Application**.
 - **Activities → Settings** → turn on **Enable Activities**.
 - **Activities → URL Mappings** → add two mappings to the same host: Prefix `/` → Target
-  `<your-relay-host>` (e.g. `bank-el-haz.onrender.com`, no `https://`), and Prefix `/cdn` →
-  the same target. The relay proxies Discord avatars through `/cdn`, so the game itself only
-  ever makes same-origin requests.
+  `bankelhazdiscord.linkman44.workers.dev` (no `https://`, no path), and Prefix `/cdn` → the same
+  target. The Worker proxies Discord avatars through `/cdn`, so the game only makes same-origin requests.
 - **OAuth2 → Redirects** → add `https://127.0.0.1` as a placeholder.
 - `DISCORD_CLIENT_ID` is pre-filled with the Bank El Haz application id near the bottom of
-  `index.html`; change it (or append `?client_id=…`) if you run your own application.
+  `public/index.html`; change it (or append `?client_id=…`) if you run your own application.
 
 Players join automatically: the app reads the current Discord user from the Embedded App SDK's
 `READY` event (no OAuth token exchange needed) and drops them into the lobby with their Discord
-display name and avatar. The shared lobby is keyed by the SDK's **`instanceId`** — the id Discord
-gives everyone who opens the same activity instance — so all players in one voice channel land in
-the same game. Their Discord id is also used as their player id, so a refresh keeps their seat.
-If the SDK is unavailable the normal name field is shown instead.
+display name and avatar. The shared lobby is keyed to the **voice channel** (derived from the SDK's
+`instanceId` / `channel_id`) — everyone in one voice channel lands in the same game. Their Discord
+id is also used as their player id, so a refresh keeps their seat. If the SDK is unavailable the
+normal name field is shown instead.
 
-The SDK provides identity, participants and the instance id; the game state itself is synced by
-the included relay (`server.js`), since the Embedded App SDK has no shared-state API.
+The SDK provides identity, participants and the instance id; the game state is synced by the Worker's
+Durable Object (`worker.js`) — the Embedded App SDK has no shared-state API.
 
-**3. Serve over HTTPS**
-The Discord proxy only speaks HTTPS, so host the relay somewhere that terminates TLS — Render,
-Railway, Fly.io, a Cloudflare Tunnel (`cloudflared tunnel --url http://localhost:3000`), or
-nginx + certbot. Point the `/` URL Mapping at that HTTPS host.
-
-**4. Play**
+**3. Play**
 Enable **Developer Mode** in Discord, join a voice channel, open the **rocket / App Launcher** and
 pick the activity. Everyone in that voice channel is dropped into the same game automatically —
 the room is keyed to the channel, and the bar at the bottom shows who's in the call.
@@ -110,5 +108,5 @@ The small dot in the top bar is the relay connection: **green = live**, **red = 
 **amber = connecting**. If auto-join doesn't put everyone together, read the room code shown in
 the lobby and have the others type it into the **Friend room code** field and tap **Join room**.
 
-**Local test without Discord:** `npm start`, then open `http://localhost:3000/?room=test` in two
-tabs — they sync through the relay. With no `?room` and no Discord, the game runs single-device.
+**Local test without Discord:** `npx wrangler dev`, then open `http://localhost:8787/?room=test` in two
+tabs — they sync through the local Durable Object. With no `?room` and no Discord, the game runs single-device.

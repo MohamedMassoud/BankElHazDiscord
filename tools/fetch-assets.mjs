@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'public');
 const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
 
 const m = HTML.match(/const WT0=(\{[\s\S]*?\});/);

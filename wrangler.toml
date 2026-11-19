@@ -1,0 +1,19 @@
+name = "bankelhazdiscord"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Serve index.html, assets/ and vendor/ from public/.
+# The Worker runs first for every request (see run_worker_first) and falls back
+# to env.ASSETS.fetch() for static files.
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = true
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomDO"]

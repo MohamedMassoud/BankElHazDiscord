@@ -2653,8 +2653,8 @@ function toggleLang(){LANG=LANG==='ar'?'en':'ar';try{localStorage.setItem('lang'
    ----------------------------------------------------------------------------
    • Discord Embedded App SDK: activity handshake, the "in the call" lobby bar,
      input focus, and (fallback) a channel-derived room.
-   • State / presence / emotes / time are synchronised through the self-hosted
-     relay (server.js) over a WebSocket. No Firebase, no third-party requests.
+    • State / presence / emotes / time are synchronised through the Cloudflare
+      Worker + Durable Object relay (worker.js) over a WebSocket.
    ========================================================================== */
 const DISCORD_CLIENT_ID = "1572657975200452739"; // Bank El Haz app id (override with ?client_id=)
 const qp = new URLSearchParams(location.search);
@@ -2765,66 +2765,22 @@ async function setupSdk() {
   } catch (e) { console.warn("[discord]", (e && e.message) || e); discordFail(); return null; }
 }
 
-﻿/* ---- relay wiring: WebSocket with an HTTP polling fallback ---- */
+﻿﻿/* ---- relay wiring: one WebSocket per player, backed by a Durable Object ---- */
 let ws = null, gotInit = false, buffered = null, resolved = false;
 let snapshotCb = null, errCb = null, emoteCb = null, pending = null;
-let currentRoom = null, pollTimer = null, polling = false, pollV = 0, pollCv = 0;
-const FORCE_POLL = qp.get("poll") === "1" || qp.get("ws") === "0";
 
 function setNet(state) {
   window.__NET_STATE = state;
   if (window.updateNetStat) window.updateNetStat();
 }
 
-function startPolling(room) {
-  if (polling) return;
-  polling = true;
-  currentRoom = room;
-  window.__NET_MODE = "poll";
-  const tick = async () => {
-    if (!polling) return;
-    try {
-      const r = await fetch("/state?room=" + encodeURIComponent(room) + "&uid=" + encodeURIComponent(uid) +
-        "&v=" + pollV + "&cv=" + pollCv, { cache: "no-store" });
-      if (!r.ok) throw new Error("http " + r.status);
-      const d = await r.json();
-      const first = !gotInit;
-      if (d.ts) window.SVOFF = d.ts - Date.now();
-      if (d.state) {
-        if (first || d.v !== pollV) {
-          pollV = d.v; buffered = d.state; gotInit = true;
-          if (snapshotCb) snapshotCb({ exists: true, data: () => norm(buffered) });
-          else maybeResolve();
-        }
-      } else if (first) {
-        gotInit = true; buffered = null;
-        if (snapshotCb) snapshotCb({ exists: false, data: () => null });
-        else maybeResolve();
-      }
-      if (d.users && window.onPres) window.onPres(d.users);
-      if (first) pollCv = d.cv || 0;
-      else { for (const e of (d.emotes || [])) { if (e.uid === uid) continue; if (emoteCb) emoteCb(e.e); } pollCv = d.cv || pollCv; }
-      setNet("open");
-    } catch (e) { window.__NET_ERR = "poll: " + ((e && e.message) || "failed"); setNet("error"); }
-    if (polling) pollTimer = setTimeout(tick, 1000);
-  };
-  tick();
-}
-function stopPolling() {
-  polling = false;
-  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
-}
-
 function connectRelay(room) {
-  currentRoom = room;
-  stopPolling();
-  if (FORCE_POLL) { startPolling(room); return; }
   const proto = location.protocol === "https:" ? "wss" : "ws";
   const url = proto + "://" + location.host + "/ws?room=" + encodeURIComponent(room) + "&uid=" + encodeURIComponent(uid);
   setNet("connecting");
-  let opened = false;
-  try { ws = new WebSocket(url); } catch (e) { startPolling(room); return; }
-  ws.onopen = () => { opened = true; stopPolling(); window.__NET_MODE = "ws"; setNet("open"); };
+  try { ws = new WebSocket(url); } catch (e) { setNet("error"); setTimeout(() => connectRelay(room), 1500); return; }
+
+  ws.onopen = () => { setNet("open"); };
   ws.onmessage = (ev) => {
     let m; try { m = JSON.parse(ev.data); } catch (e) { return; }
     if (m.t === "init") {
@@ -2852,40 +2808,25 @@ function connectRelay(room) {
     setNet("closed");
     if (errCb) { try { errCb(); } catch (e) {} }
     if (pending) { const p = pending; pending = null; p.reject(new Error("offline")); }
-    // keep the game live over HTTP while the socket reconnects
-    startPolling(room);
-    if (opened) setTimeout(() => connectRelay(room), 1500);
+    setTimeout(() => connectRelay(room), 1500);
   };
-  ws.onerror = () => { window.__NET_ERR = "ws: error"; setNet("error"); if (!opened) startPolling(room); };
-  setTimeout(() => { if (!opened) startPolling(room); }, 3000);
+  ws.onerror = () => { window.__NET_ERR = "ws: error"; setNet("error"); };
 }
 
 function maybeResolve() {
   if (resolved || !gotInit) return;
   resolved = true;
-  const post = (path, body) => fetch(path, {
-    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
-  }).then(r => r.json());
   const ref = {
     set: s => new Promise((resolve, reject) => {
-      if (ws && ws.readyState === 1) {
-        pending = { resolve, reject };
-        ws.send(JSON.stringify({ t: "set", v: s.v, state: s }));
-      } else {
-        post("/set", { room: currentRoom, v: s.v, state: s }).then(d => {
-          if (d && d.ok) { if (typeof d.v === "number") pollV = d.v; resolve(); }
-          else reject(new Error("conflict"));
-        }).catch(reject);
-      }
+      if (!ws || ws.readyState !== 1) { reject(new Error("offline")); return; }
+      pending = { resolve, reject };
+      ws.send(JSON.stringify({ t: "set", v: s.v, state: s }));
     }),
     onSnapshot: (cb, eb) => {
       snapshotCb = cb; errCb = eb;
       if (gotInit) { const b = buffered; snapshotCb(b ? { exists: true, data: () => norm(b) } : { exists: false, data: () => null }); }
     },
-    emote: p => {
-      if (ws && ws.readyState === 1) { try { ws.send(JSON.stringify({ t: "emote", e: p })); } catch (e) {} }
-      else post("/emote", { room: currentRoom, e: p }).catch(() => {});
-    },
+    emote: p => { if (ws && ws.readyState === 1) { try { ws.send(JSON.stringify({ t: "emote", e: p })); } catch (e) {} } },
     onEmote: cb => { emoteCb = cb; },
   };
   window.netResolve({ uid, ref });

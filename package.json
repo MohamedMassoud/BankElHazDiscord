@@ -2,11 +2,10 @@
   "name": "bank-el-haz",
   "version": "1.0.0",
   "private": true,
-  "description": "Bank El Haz — Discord Activity (self-hosted relay, no third-party services)",
+  "description": "Bank El Haz — Discord Activity (Cloudflare Worker + Durable Objects)",
   "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "ws": "^8.18.0"
+    "deploy": "npx wrangler deploy",
+    "dev": "npx wrangler dev",
+    "login": "npx wrangler login"
   }
 }
