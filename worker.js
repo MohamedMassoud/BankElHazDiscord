@@ -138,7 +138,7 @@ export class RoomDO {
         } catch (e) {}
       });
     } else if (m.t === 'emote') {
-      if (Number.isFinite(m.e)) this.broadcast({ t: 'emote', e: m.e }, ws);
+      if (m.e !== undefined && m.e !== null) this.broadcast({ t: 'emote', e: m.e }, ws);
     } else if (m.t === 'ping') {
       try { ws.send(JSON.stringify({ t: 'pong', ts: m.ts })); } catch (e) {}
     }

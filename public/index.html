@@ -909,6 +909,64 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 /* Discord avatars on player tokens (initial stays underneath as a fallback) */
 .tok,.token,.tk u{position:relative}
 .tok img.tokav,.token img.tokav,.tk u img.tokav{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+/* Desktop / Discord activity: everything fits the window, no scrollbars.
+   The board stays full size; the side column is compacted and only scrolls
+   invisibly if a very small window truly cannot fit it. */
+@media(min-width:900px){
+  html,body{height:100%;}
+  body{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+  .topbar{flex:0 0 auto;position:static;}
+  #app{flex:1 1 auto;min-height:0;width:100%;max-width:1280px;margin:0 auto;padding:10px 16px 12px;box-sizing:border-box;overflow:hidden;}
+  /* classic: .gm > .bcol(strip, board, legend) + .scol */
+  .gm{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(380px, 38vw, 520px);grid-template-rows:minmax(0,1fr);grid-template-areas:"board side";gap:10px 16px;align-items:stretch;}
+  .bcol{display:contents;}
+  .gm .board{grid-area:board;align-self:center;justify-self:center;width:min(100%, calc(100vh - 84px), 760px);margin:0;}
+  .gm .strip,.gm .lg{display:none;}
+  .gm .scol{grid-area:side;min-height:0;overflow:auto;scrollbar-width:none;align-self:stretch;}
+  .gm .scol::-webkit-scrollbar{display:none;}
+  /* midnight: .game > .score, .boardcard, .lg.legend, .rail */
+  .game{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(380px, 38vw, 520px);grid-template-rows:minmax(0,1fr);grid-template-areas:"board rail";gap:10px 16px;align-items:stretch;}
+  .game .boardcard{grid-area:board;display:flex;align-items:center;justify-content:center;min-height:0;}
+  .game .board{width:min(100%, calc(100vh - 84px), 760px);margin:0;}
+  .game .score,.game .lg.legend{display:none;}
+  .game .rail{grid-area:rail;min-height:0;overflow:auto;scrollbar-width:none;align-self:stretch;}
+  .game .rail::-webkit-scrollbar{display:none;}
+  /* atlas: .shell > .mapwrap + .side */
+  .shell{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(380px, 38vw, 520px);gap:16px;align-items:stretch;}
+  .mapwrap{min-width:0;min-height:0;overflow:auto;scrollbar-width:none;}
+  .mapwrap::-webkit-scrollbar{display:none;}
+  .mapwrap .legend,.mapwrap .logbook{display:none;}
+  .side{min-height:0;overflow:auto;scrollbar-width:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;}
+  .side::-webkit-scrollbar{display:none;}
+  .side .passport .chips,.side .passport .stampPos{display:none;}
+  .side .passport .stamp{padding:4px 6px;margin:4px 0;}
+  .side .passport .stampNet{font-size:12px;}
+  /* compact side content: two-column players, horizontal play order, small images */
+  .panel{padding:10px;}
+  .panel.players{display:grid;grid-template-columns:1fr 1fr;gap:4px;align-content:start;}
+  .panel.players .pb{margin:0;padding:2px 4px;height:32px;overflow:hidden;}
+  .panel.players .pb .pl{height:100%;font-size:12px;gap:3px;flex-wrap:nowrap;overflow:hidden;white-space:nowrap;}
+  .panel.players .pb [data-onclick^="renameMe"]{display:none;}
+  .panel.players .pb .nwl,.panel.players .pb .chips,.panel.players .pb .pd{display:none;}
+  .panel.players #rs{grid-column:1 / -1;}
+  .panel.ro{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+  .panel .pimg{width:44px;height:44px;object-fit:cover;border-radius:8px;margin:0 0 6px;}
+  /* the lobby hero is decorative — hide it on desktop so the lobby fits too */
+  .hero,.herowrap{display:none;}
+  /* lobbies: players in two columns so everyone fits without scrolling */
+  .panel.lobby{display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;}
+  .panel.lobby > b,.panel.lobby > small,.panel.lobby > button,.panel.lobby > div:not(.pl){grid-column:1 / -1;}
+  .panel.lobby .pl{margin:0;padding:5px 8px;}
+  .lobby .seats{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  .lobby .seat{margin:0;padding:6px 8px;}
+  .lobby .manifest{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+  /* selected-square details float over the side instead of pushing it taller */
+  .scol .sqp{position:fixed;inset-inline-end:16px;bottom:16px;width:340px;max-height:calc(100vh - 80px);overflow:auto;scrollbar-width:none;z-index:80;box-shadow:0 18px 60px rgba(0,0,0,.5);}
+  .scol .sqp::-webkit-scrollbar{display:none;}
+  .foot{display:none;}
+  .topbar-actions{gap:6px;flex-wrap:nowrap;}
+  #np{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+}
 </style>
 </head><body>
 <div id="dcppl" class="dcppl" hidden></div>
@@ -1496,6 +1554,7 @@ function render(){
  // ignore presence instead of marking everyone as disconnected.
  if(PRES&&G&&G.P&&G.P.length&&!G.P.some(p=>PRES[p.id]))PRES=null;
  (THEMES[UI]||THEMES.classic).render(); maybeAutoJoin(); }
+function closeSq(){CARD=-1;render()}
 function fmtLog(e,h){ var f=(THEMES[UI]||THEMES.classic).fmtLog; return f?f(e,h):''; }
 function gone(p){ var g=(THEMES[UI]||THEMES.classic).gone; return g?g(p):false; }
 function themeLabel(t){ return t==='classic'?'Classic':t==='midnight'?'Midnight':'Atlas'; }
@@ -1575,7 +1634,7 @@ let HL=null;
 const lnk=(k,t)=>`<span class="lnk" data-onclick="event.stopPropagation();pick(${k})">${t}</span>`;
 // clicking ANY land name / picture anywhere flashes that square on the board (and scrolls it into view if needed)
 function pick(i){CARD=i;HL={i,t:Date.now()};sfx('tap');render();focusSq(i)}
-function focusSq(i){if(!document.querySelector)return;const e=document.querySelector('.sq[data-i="'+i+'"]');if(!e||!e.scrollIntoView)return;
+function focusSq(i){if(window.innerWidth>=900)return;if(!document.querySelector)return;const e=document.querySelector('.sq[data-i="'+i+'"]');if(!e||!e.scrollIntoView)return;
  const r=e.getBoundingClientRect(),c=document.querySelector('.ctl'),lim=c&&innerWidth<900?c.getBoundingClientRect().top:innerHeight;
  if(r.top<50||r.bottom>lim-10)e.scrollIntoView({block:'center',behavior:'smooth'})}
 const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
@@ -1583,7 +1642,7 @@ function sqPanel(s){
  const q=S[CARD];if(!BUY(q))return '';
  const o=s.O[CARD],ow=o!=null?s.P[o]:null,i=s.t,p=s.P[i],R=RN[CARD];
   const mineP=ow&&!ow.bot&&(local||ow.id===me),can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===i));
-  let h=`<div class="panel">`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
+  let h=`<div class="panel sqp"><button class="s" style="float:inline-end;min-height:24px;padding:0 8px" data-onclick="closeSq()">✕</button>`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
   if(q[1]==='p')h+=tl('rentline',R.r0,R.rs,R.r[1],R.r[2],R.r[3],R.r[4],R.r[5])+'<br>'+tl('housecost',R.hc,sval(CARD));
   else if(q[1]==='r')h+=tl('railrent',P.rail.join(' ← '));
   else h+=tl('utilrent',P.util[0],P.util[1]);
@@ -1700,7 +1759,7 @@ function renderClassic(){
  if(!st){
   const P2=s?s.P:[];if(LPN>=0&&P2.length>LPN)sfx('join');LPN=P2.length;
   const joined=P2.some(x=>x.id===me);
-  h+=`<div class="panel">${poster()}<b>${tl('lobby')}</b> <br><small>${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s" style="min-height:30px;padding:2px 10px;font-size:12px" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}`;
+  h+=`<div class="panel lobby">${poster()}<b>${tl('lobby')}</b> <br><small>${esc(tl(...CFGK))}</small>${SHEET_ID?` <button class="s" style="min-height:30px;padding:2px 10px;font-size:12px" data-onclick="reloadSheet()">${tl('b_reloadcfg')}</button>`:''}`;
   h+=P2.map((p,i)=>`<div class="pl">${tok(p)}${hostId(s)===p.id?'👑 ':''}${esc(p.n)}${p.id===me?` <button class="s" style="min-height:24px;padding:0 8px;font-size:12px" data-onclick="renameMe()" title="${tl('rename_title')}">✏️</button>`:''}${gone(p)?` <small>${tl('gone')}</small>`:''}${(local||hostId(s)===me)&&p.id!==me?` <button class="s" style="min-height:30px;padding:2px 10px" data-onclick="act('kick',${i})">${tl('b_kick')}</button>`:''}</div>`).join('')||`<p><small>${tl('nobody')}</small></p>`;
   if(!joined&&P2.length<6){const dj=discordJoinHTML();if(dj)h+=dj;else h+=`<div style="margin:10px 0;padding:10px;border:2px dashed var(--bd,#999);border-radius:14px"><div style="display:flex;gap:8px"><input id="nm" placeholder="${tl('yourname')}" maxlength="14" style="flex:1;min-width:0"> <button data-onclick="act('join',document.getElementById('nm').value)">${local?tl('b_addplayer'):tl('b_join')}</button></div></div>`;}
 
@@ -1709,9 +1768,9 @@ function renderClassic(){
   if(P2.length<6&&(local||hostId(s)===me))h+=`<div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--bd,#999);display:flex;align-items:center;gap:8px;flex-wrap:wrap"><small style="opacity:.75">${tl('or_addbot')}</small><button class="s" style="min-height:30px;padding:2px 10px" data-onclick="act('bot')">${tl('b_addbot')}</button></div>`;
   h+=`</div>`}
  else{
-  h+=`<div class="gm"><div class="bcol">${strip(s)}<div class="board${fx('shake')?' shake':''}"${fx('shake')?` style="${ad(FX.ls)}"`:''}>${board(s)}</div><div class="lg"><span>${tl('lg_sale')}</span><span><i class="lgd"></i> ${tl('lg_owned')}</span><span>${tl('lg_full')}</span><span>${tl('lg_rise')}</span><span>${tl('lg_mort')}</span><span>${tl('lg_tap')}</span></div></div><div class="scol">${roPanel(s)}${dcBanner(s)}<div class="panel ctl" style="text-align:center">${controls(s)}</div>${sqPanel(s)}<div class="panel">${playersHTML(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" data-onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div></div></div>`}
+  h+=`<div class="gm"><div class="bcol">${strip(s)}<div class="board${fx('shake')?' shake':''}"${fx('shake')?` style="${ad(FX.ls)}"`:''}>${board(s)}</div><div class="lg"><span>${tl('lg_sale')}</span><span><i class="lgd"></i> ${tl('lg_owned')}</span><span>${tl('lg_full')}</span><span>${tl('lg_rise')}</span><span>${tl('lg_mort')}</span><span>${tl('lg_tap')}</span></div></div><div class="scol">${roPanel(s)}${dcBanner(s)}<div class="panel ctl" style="text-align:center">${controls(s)}</div>${sqPanel(s)}<div class="panel players">${playersHTML(s)}${(local||hostId(s)===me)?`<button class="s" id="rs" data-onclick="act('reset')">${Date.now()<RC?tl('sure'):tl('b_newgame')}</button>`:`<small>${tl('hostonly')}</small>`}</div></div></div>`}
  if(err)h+=`<p style="color:var(--ac)">${esc(err)}</p>`;
- h+=`<p><small>${tl('rules',P.startCash,P.passGo,P.jailFine,Math.round((P.esc-1)*100),Math.round(P.turnSeconds/60),P.timeoutPenalty,Math.round(P.tradeTaxMax*100))}<br>${tl('credit')}</small></p>`;
+   h+=`<p class="foot"><small>${tl('rules',P.startCash,P.passGo,P.jailFine,Math.round((P.esc-1)*100),Math.round(P.turnSeconds/60),P.timeoutPenalty,Math.round(P.tradeTaxMax*100))}<br>${tl('credit')}</small></p>`;
  const ae=document.activeElement,aid=ae&&ae.id,av=aid&&ae.value;
  a.innerHTML=h;
  if(aid){const e2=document.getElementById(aid);if(e2){if(av!==undefined&&av!=='')e2.value=av;e2.focus()}}
@@ -1812,7 +1871,7 @@ let HL=null;
 const lnk=(k,t)=>`<span class="lnk" data-onclick="event.stopPropagation();pick(${k})">${t}</span>`;
 // clicking ANY land name / picture anywhere flashes that square on the board (and scrolls it into view if needed)
 function pick(i){CARD=i;HL={i,t:Date.now()};sfx('tap');render();focusSq(i)}
-function focusSq(i){if(!document.querySelector)return;const e=document.querySelector('.sq[data-i="'+i+'"]');if(!e||!e.scrollIntoView)return;
+function focusSq(i){if(window.innerWidth>=900)return;if(!document.querySelector)return;const e=document.querySelector('.sq[data-i="'+i+'"]');if(!e||!e.scrollIntoView)return;
  const r=e.getBoundingClientRect(),c=document.querySelector('.ctl'),lim=c&&innerWidth<900?c.getBoundingClientRect().top:innerHeight;
  if(r.top<50||r.bottom>lim-10)e.scrollIntoView({block:'center',behavior:'smooth'})}
 const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
@@ -1820,7 +1879,7 @@ function sqPanel(s){
  const q=S[CARD];if(!BUY(q))return '';
  const o=s.O[CARD],ow=o!=null?s.P[o]:null,i=s.t,p=s.P[i],R=RN[CARD];
   const mineP=ow&&!ow.bot&&(local||ow.id===me),can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===i));
-  let h=`<div class="panel">`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
+  let h=`<div class="panel sqp"><button class="s" style="float:inline-end;min-height:24px;padding:0 8px" data-onclick="closeSq()">✕</button>`+(IMG[CARD]?`<img class="pimg" src="${esc(IMG[CARD])}" alt="" referrerpolicy="no-referrer" onerror="this.remove()">`:'')+`<b class="lnk" data-onclick="pick(${CARD})">${iconOf(CARD)} ${esc(sn(CARD))}</b> <small>(${tl('cur',q[2])})</small><div class="pd">`;
   if(q[1]==='p')h+=tl('rentline',R.r0,R.rs,R.r[1],R.r[2],R.r[3],R.r[4],R.r[5])+'<br>'+tl('housecost',R.hc,sval(CARD));
   else if(q[1]==='r')h+=tl('railrent',P.rail.join(' ← '));
   else h+=tl('utilrent',P.util[0],P.util[1]);
@@ -2104,7 +2163,7 @@ function locCard(s){
 let HL=null;
 const lnk=(k,t)=>`<span class="lnk" data-onclick="event.stopPropagation();pick(${k})">${t}</span>`;
 function pick(i){CARD=i;HL={i,t:Date.now()};sfx('tap');render();focusSq(i)}
-function focusSq(i){const e=document.querySelector('[data-i="'+i+'"]');if(e&&e.scrollIntoView)e.scrollIntoView({block:'center',behavior:'smooth'})}
+function focusSq(i){if(window.innerWidth>=900)return;const e=document.querySelector('[data-i="'+i+'"]');if(e&&e.scrollIntoView)e.scrollIntoView({block:'center',behavior:'smooth'})}
 const Bt=(k,t,c,a,dis)=>`<button class="${c||''}"${dis?' disabled':''} data-onclick="act('${k}'${a!==undefined?','+a:''})">${t}</button>`;
 // passport list of players
 function playerPassport(s){
