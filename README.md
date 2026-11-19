@@ -86,8 +86,13 @@ npm start            # serves the game + WebSocket relay on http://localhost:300
 
 Players join automatically: the app reads the current Discord user from the Embedded App SDK's
 `READY` event (no OAuth token exchange needed) and drops them into the lobby with their Discord
-display name and avatar. Their Discord id is also used as their player id, so a refresh keeps
-their seat. If the SDK is unavailable the normal name field is shown instead.
+display name and avatar. The shared lobby is keyed by the SDK's **`instanceId`** — the id Discord
+gives everyone who opens the same activity instance — so all players in one voice channel land in
+the same game. Their Discord id is also used as their player id, so a refresh keeps their seat.
+If the SDK is unavailable the normal name field is shown instead.
+
+The SDK provides identity, participants and the instance id; the game state itself is synced by
+the included relay (`server.js`), since the Embedded App SDK has no shared-state API.
 
 **3. Serve over HTTPS**
 The Discord proxy only speaks HTTPS, so host the relay somewhere that terminates TLS — Render,

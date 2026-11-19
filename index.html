@@ -2784,10 +2784,18 @@ function maybeResolve() {
   const sdk = await Promise.race([setupSdk(), new Promise(r => setTimeout(() => r(null), 4500))]);
   let room = qp.get("room") || null;
   if (!room) {
-    if (sdk && sdk.channelId) room = "ch_" + sdk.channelId;
-    else room = qp.get("instance_id") || "lobby";
+    // Discord's docs: everyone in the same activity instance gets the same instanceId.
+    // Keying shared state on it is what keeps friends in one lobby.
+    const iid = (sdk && sdk.instanceId) || qp.get("instance_id") || null;
+    const cid = (sdk && sdk.channelId) || qp.get("channel_id") || null;
+    if (iid) room = iid;
+    else if (cid) room = "ch_" + cid;
+    else room = "lobby";
   }
   window.ROOM = room;
+  console.log("[discord] instance", (sdk && sdk.instanceId) || qp.get("instance_id"),
+              "channel", (sdk && sdk.channelId) || qp.get("channel_id"),
+              "guild", (sdk && sdk.guildId) || qp.get("guild_id"), "-> room", room);
   netStarted = true;
   connectRelay(room);
 })();
