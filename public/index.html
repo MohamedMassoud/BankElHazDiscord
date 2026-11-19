@@ -906,6 +906,12 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 #netstat{display:inline-block;width:9px;height:9px;border-radius:50%;background:#f4a300;box-shadow:0 0 0 2px rgba(0,0,0,.18);vertical-align:middle;flex:0 0 auto}
 #netstat.on{background:#3ba55d}
 #netstat.off{background:#e63946}
+/* audio buttons: icon + clear label, with a visible muted state */
+.audio-btn{display:inline-flex;align-items:center;gap:5px;padding:0 9px;min-height:32px;white-space:nowrap;}
+.audio-label{font-size:11px;font-weight:700;opacity:.9;}
+.audio-btn.off{opacity:.55;}
+.audio-btn.off .audio-label{text-decoration:line-through;}
+@media(max-width:700px){.audio-label{display:none}.audio-btn{padding:0 7px}}
 /* legal links in the lobby */
 .legal{margin:8px 0 0;text-align:center;font-size:11px;line-height:1.4;opacity:.75;}
 .legal a{color:inherit;text-decoration:underline;text-underline-offset:2px;opacity:1;}
@@ -996,7 +1002,7 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 </style>
 </head><body>
 <div id="dcppl" class="dcppl" hidden></div>
-<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes">😀</button><button id="lg" class="s" data-onclick="toggleLang()">EN</button><span id="netstat" title="Connecting…"></span><button id="mu" class="iconbtn" data-onclick="muteMusic()" title="Music" aria-label="Music">🎵</button><button id="mf" class="iconbtn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects">🔔</button><span id="np" class="np"></span></div></header>
+<header class="topbar"><h1 id="h1">🎲 Bank El Haz</h1><div class="topbar-actions"><button id="ui" class="s" data-onclick="cycleUI()" title="Switch theme"><span id="ui-ico">🎨</span><span class="ui-label" id="ui-label">Classic</span></button><button id="emote-toggle" class="s" data-onclick="toggleEmoteBar()" title="Emotes — hold B (or tap)" aria-label="Emotes" aria-pressed="false">😀</button><button id="lg" class="s" data-onclick="toggleLang()">EN</button><button id="mu" class="s audio-btn" data-onclick="muteMusic()" title="Music" aria-label="Music" aria-pressed="true"><span id="mu-ico">🎵</span><span class="audio-label" id="mu-label">Music</span></button><button id="mf" class="s audio-btn" data-onclick="muteSfx()" title="Sound effects" aria-label="Sound effects" aria-pressed="true"><span id="mf-ico">🔊</span><span class="audio-label" id="mf-label">SFX</span></button><span id="np" class="np"></span><span id="netstat" title="Connecting…"></span></div></header>
 <div id="toast"></div><div id="app"><p>جاري الاتصال…</p></div>
 <script>
 
@@ -2537,8 +2543,22 @@ document.addEventListener('pointerdown',e=>{const b=e.target.closest&&e.target.c
 document.addEventListener('input',()=>sfx('key'));
 function applyMuteUI(){
  const m=document.getElementById('mu'),f=document.getElementById('mf');
- if(m){m.textContent=MUSIC_MUTE?'🔇':'🎵';m.classList.toggle('off',MUSIC_MUTE);m.title=(LANG==='en'?(MUSIC_MUTE?'Music off':'Music on'):(MUSIC_MUTE?'الموسيقى مقفولة':'الموسيقى شغالة'))}
- if(f){f.textContent=SFX_MUTE?'🔕':'🔔';f.classList.toggle('off',SFX_MUTE);f.title=(LANG==='en'?(SFX_MUTE?'Sound effects off':'Sound effects on'):(SFX_MUTE?'المؤثرات مقفولة':'المؤثرات شغالة'))}
+ if(m){
+  const ico=m.querySelector('#mu-ico'),lab=m.querySelector('#mu-label');
+  if(ico)ico.textContent='🎵';
+  if(lab)lab.textContent=LANG==='en'?(MUSIC_MUTE?'Music off':'Music'):(MUSIC_MUTE?'موسيقى ✕':'موسيقى');
+  m.classList.toggle('off',MUSIC_MUTE);
+  m.setAttribute('aria-pressed',String(!MUSIC_MUTE));
+  m.title=(LANG==='en'?(MUSIC_MUTE?'Music off':'Music on'):(MUSIC_MUTE?'الموسيقى مقفولة':'الموسيقى شغالة'));
+ }
+ if(f){
+  const ico=f.querySelector('#mf-ico'),lab=f.querySelector('#mf-label');
+  if(ico)ico.textContent='🔊';
+  if(lab)lab.textContent=LANG==='en'?(SFX_MUTE?'SFX off':'SFX'):(SFX_MUTE?'مؤثرات ✕':'مؤثرات');
+  f.classList.toggle('off',SFX_MUTE);
+  f.setAttribute('aria-pressed',String(!SFX_MUTE));
+  f.title=(LANG==='en'?(SFX_MUTE?'Sound effects off':'Sound effects on'):(SFX_MUTE?'المؤثرات مقفولة':'المؤثرات شغالة'));
+ }
 }
 function muteMusic(){MUSIC_MUTE=!MUSIC_MUTE;try{localStorage.setItem('musicMute',MUSIC_MUTE?'1':'0')}catch(e){}applyMuteUI();musicSync()}
 function muteSfx(){SFX_MUTE=!SFX_MUTE;try{localStorage.setItem('sfxMute',SFX_MUTE?'1':'0')}catch(e){}applyMuteUI();if(!SFX_MUTE)sfx('click')}
@@ -2620,7 +2640,7 @@ let emoteHeld=false;
 function setEmoteBar(open){
  const b=document.getElementById('emote-bar');if(!b)return;
  b.classList.toggle('open',!!open);
- const btn=document.getElementById('emote-toggle');if(btn)btn.classList.toggle('on',!!open);
+  const btn=document.getElementById('emote-toggle');if(btn){btn.classList.toggle('on',!!open);btn.setAttribute('aria-pressed',String(!!open))}
 }
 function toggleEmoteBar(){const b=document.getElementById('emote-bar');if(!b)return;setEmoteBar(!b.classList.contains('open'));}
 function buildEmoteBar(){
