@@ -938,12 +938,14 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
   .shell{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px, 26vw, 360px);gap:16px;align-items:stretch;}
   .mapwrap{min-width:0;min-height:0;overflow:auto;scrollbar-width:none;}
   .mapwrap::-webkit-scrollbar{display:none;}
+  .map{width:100%;height:100%;aspect-ratio:auto;}
   .mapwrap .legend,.mapwrap .logbook{display:none;}
-  .side{min-height:0;overflow:auto;scrollbar-width:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;}
+  .side{min-height:0;overflow:auto;scrollbar-width:none;display:grid;grid-template-columns:1fr 1fr;gap:6px;align-content:start;}
   .side::-webkit-scrollbar{display:none;}
-  .side .card{padding:8px;}
+  .side .card{padding:6px;}
+  .side .postcard{grid-column:1 / -1;align-self:start;}
   .side .passport .chips,.side .passport .stampPos{display:none;}
-  .side .passport .stamp{padding:4px 6px;margin:4px 0;}
+  .side .passport .stamp{padding:3px 6px;margin:3px 0;}
   .side .passport .stampNet{font-size:12px;}
   /* compact side content: two-column players, horizontal play order, small images */
   .panel{padding:10px;}
@@ -2172,7 +2174,8 @@ function roPanel(s){
 // winding 6x8 travel trail: index -> (x%,y%) on the map
 const nodeXY=i=>{const row=(i/8)|0,k=i%8,col=row%2?7-k:k;return [6+col*(88/7),12+row*(76/5)]};
 function board(s){
- const curPos=(s.P[s.t]&&!s.P[s.t].out)?posNow(s,s.t):-1;
+  if(CARD<0)HL=null;
+  const curPos=(s.P[s.t]&&!s.P[s.t].out)?posNow(s,s.t):-1;
  const byNode={};
  s.P.forEach((p,k)=>{if(!p.out){const q=posNow(s,k);(byNode[q]=byNode[q]||[]).push(k)}});
  const hlNow=HL&&HL.i!=null&&Date.now()<HL.t+3200;
@@ -2208,8 +2211,9 @@ function locCard(s){
  const mineP=ow&&!ow.bot&&(local||ow.id===me);
  const can=!MOVING&&s.w==null&&!s.tr&&!s.debt&&mineP&&(s.au||((s.ph==='roll'||s.ph==='end')&&o===s.t));
  const grp=q[1]==='p'?GC[q[3]]:'#b08968';
- let h=`<div class="card postcard" style="--gc:${grp}">`;
- h+=`<div class="pcHead"><span class="pcIcon">${iconOf(i)}</span><div class="pcTitle"><b>${esc(sn(i))}</b>${q[2]?`<small>${tl('cur',q[2])}</small>`:''}</div>${ow?`<span class="pcOwn" style="background:${PC[ow.c]}">${esc(ini(ow.n))}</span>`:by?'<span class="pcTag">🏷️</span>':''}</div>`;
+  let h=`<div class="card postcard" style="--gc:${grp}">`;
+  h+=`<button class="s" style="float:inline-end;min-height:24px;padding:0 8px" data-onclick="closeSq()">✕</button>`;
+  h+=`<div class="pcHead"><span class="pcIcon">${iconOf(i)}</span><div class="pcTitle"><b>${esc(sn(i))}</b>${q[2]?`<small>${tl('cur',q[2])}</small>`:''}</div>${ow?`<span class="pcOwn" style="background:${PC[ow.c]}">${esc(ini(ow.n))}</span>`:by?'<span class="pcTag">🏷️</span>':''}</div>`;
  if(by){
   h+=`<div class="pcBody">`;
   if(q[1]==='p')h+=tl('rentline',R.r0,R.rs,R.r[1],R.r[2],R.r[3],R.r[4],R.r[5])+'<br>'+tl('housecost',R.hc,sval(i));
