@@ -98,6 +98,14 @@ normal name field is shown instead.
 The SDK provides identity, participants and the instance id; the game state is synced by the Worker's
 Durable Object (`worker.js`) — the Embedded App SDK has no shared-state API.
 
+**Privacy & Terms (required for publishing)**
+- The pages are `public/privacy.html` and `public/terms.html`, served at `/privacy.html` and `/terms.html`.
+- In the Developer Portal → **App Directory**, set:
+  - **Privacy Policy URL** → `https://<your-worker-host>/privacy.html`
+  - **Terms of Service URL** → `https://<your-worker-host>/terms.html`
+- The contact is `linkman44@gmail.com`; change it in both files if it changes.
+- The lobby shows links to both pages (they open through the Discord SDK's external-link command).
+
 **3. Play**
 Enable **Developer Mode** in Discord, join a voice channel, open the **rocket / App Launcher** and
 pick the activity. Everyone in that voice channel is dropped into the same game automatically —
