@@ -1129,6 +1129,15 @@ if(!ROOM){ROOM=Math.random().toString(36).slice(2,8);history.replaceState(null,'
 window.ROOM=ROOM;window.netReady=new Promise(r=>{window.netResolve=r});
 addEventListener('hashchange',()=>location.reload());
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// show script errors on screen instead of a blank white page
+window.addEventListener('error',function(e){
+ if(e&&e.target&&e.target.tagName==='IMG')return;
+ const app=document.getElementById('app');if(!app)return;
+ if(!app.innerHTML||app.innerHTML.trim()===''||!app.querySelector('.panel')){
+  const msg=(e&&(e.message||(e.error&&e.error.message)))||'Unknown error';
+  app.innerHTML='<div class="panel"><b>'+(LANG==='ar'?'⚠️ خطأ في اللعبة':'⚠️ Game error')+'</b><pre style="white-space:pre-wrap;font-size:12px;opacity:.85;margin:8px 0 0">'+esc(msg)+'</pre></div>';
+ }
+});
 const fresh=()=>({st:0,v:0,P:[],O:{},V:{},H:{},M:{},t:0,dir:1,ph:'roll',d:[1,1],log:[],w:null,again:false,au:null,tr:null,dl:0,dk:'',cfg:'',rc:0,ro:null,debt:null});
 const cur=s=>s.P[s.t];
 // ping-pong turn order: 0 ▸ 1 ▸ 2 ▸ 2 ▸ 1 ▸ 0 ▸ 0 ▸ 1 ▸ … (bounces at each end)

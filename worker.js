@@ -12,6 +12,14 @@
  *   GET /cdn/...  -> Discord avatar proxy
  */
 
+function validState(s) {
+  return !!s && typeof s === 'object' && !Array.isArray(s) &&
+    Array.isArray(s.P) &&
+    !!s.O && typeof s.O === 'object' && !Array.isArray(s.O) &&
+    !!s.V && typeof s.V === 'object' && !Array.isArray(s.V) &&
+    Array.isArray(s.log);
+}
+
 export default {
   async fetch(request, env) {
     try {
@@ -56,7 +64,8 @@ export class RoomDO {
     this.lastPresenceKey = '';
 
     ctx.blockConcurrencyWhile(async () => {
-      this.state = (await ctx.storage.get('state')) || null;
+      const s = await ctx.storage.get('state');
+      this.state = validState(s) ? s : null;
     });
   }
 
@@ -86,6 +95,7 @@ export class RoomDO {
 
   async applySet(v, state) {
     const cur = this.state ? this.state.v : 0;
+    if (!validState(state) || !Number.isFinite(v)) return { ok: false, cur };
     if (v !== cur + 1) return { ok: false, cur };
     this.state = state;
     this.state.v = v;
@@ -128,7 +138,7 @@ export class RoomDO {
     if (!m || typeof m.t !== 'string') return;
 
     if (m.t === 'set') {
-      if (!m.state || typeof m.state !== 'object' || Array.isArray(m.state) || !Number.isFinite(m.v)) {
+      if (!validState(m.state) || !Number.isFinite(m.v)) {
         ws.send(JSON.stringify({ t: 'reject', v: m.v, cur: this.state ? this.state.v : 0 }));
         return;
       }
