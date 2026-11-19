@@ -7,8 +7,7 @@ A Monopoly-style property game for **2–6 players** (friends and/or bots). Roll
 ---
 
 ## 🚀 Getting a game going
-- The **host** starts a game and shares the invite link with everyone.
-- Each player opens the link, types a name, and **joins**.
+- Open the activity in a Discord voice channel — everyone in that channel joins automatically with their Discord name and avatar.
 - Add **🤖 bots** to fill empty seats if you like.
 - When everyone's in, the host taps **▶️ Start the game**.
 - You can also play **pass-and-play** on one device — just add players and start.
@@ -105,8 +104,7 @@ pick the activity. Everyone in that voice channel is dropped into the same game 
 the room is keyed to the channel, and the bar at the bottom shows who's in the call.
 
 The small dot in the top bar is the relay connection: **green = live**, **red = offline**,
-**amber = connecting**. If auto-join doesn't put everyone together, read the room code shown in
-the lobby and have the others type it into the **Friend room code** field and tap **Join room**.
+**amber = connecting**.
 
 **Local test without Discord:** `npx wrangler dev`, then open `http://localhost:8787/?room=test` in two
 tabs — they sync through the local Durable Object. With no `?room` and no Discord, the game runs single-device.
