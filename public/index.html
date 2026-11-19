@@ -76,7 +76,7 @@ h1{font-size:clamp(1.1rem,4.5vw,1.6rem)}
 button{min-height:46px;font-size:16px}
 input{font-size:16px;min-height:44px;max-width:100%}
 input[type=number]{width:110px}
-.board{grid-template-columns:1.5fr repeat(11,1fr) 1.5fr;grid-template-rows:1.5fr repeat(11,1fr) 1.5fr;max-width:min(100%,calc(100dvh - 16px));margin:auto}
+.board{grid-template-columns:minmax(0,1.35fr) repeat(11,minmax(0,1fr)) minmax(0,1.35fr);grid-template-rows:minmax(0,1.35fr) repeat(11,minmax(0,1fr)) minmax(0,1.35fr);max-width:min(100%,calc(100dvh - 16px));margin:auto}
 .mid{grid-area:2/2/13/13;overflow:hidden}
 .gm{display:block}
 .bcol,.scol{min-width:0}
@@ -468,7 +468,7 @@ input[type=number]{width:120px}
   border:1px solid var(--edge);box-shadow:var(--sh-lg);
 }
 .board{
-  display:grid;grid-template-columns:1.5fr repeat(11,1fr) 1.5fr;grid-template-rows:1.5fr repeat(11,1fr) 1.5fr;
+  display:grid;grid-template-columns:minmax(0,1.35fr) repeat(11,minmax(0,1fr)) minmax(0,1.35fr);grid-template-rows:minmax(0,1.35fr) repeat(11,minmax(0,1fr)) minmax(0,1.35fr);
   aspect-ratio:1;gap:2px;direction:ltr;border-radius:14px;overflow:hidden;
   background:rgba(0,0,0,.42);box-shadow:inset 0 0 50px rgba(0,0,0,.65);
   width:100%;max-width:min(100%,calc(100dvh - 40px));margin:auto;
@@ -915,29 +915,30 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
 @media(min-width:900px){
   html,body{height:100%;}
   body{height:100vh;display:flex;flex-direction:column;overflow:hidden;}
-  .topbar{flex:0 0 auto;position:static;}
-  #app{flex:1 1 auto;min-height:0;width:100%;max-width:1280px;margin:0 auto;padding:10px 16px 12px;box-sizing:border-box;overflow:hidden;}
+  .topbar{flex:0 0 auto;position:static;padding-block:4px;}
+  #app{flex:1 1 auto;min-height:0;width:100%;max-width:1280px;margin:0 auto;padding:6px 12px 8px;box-sizing:border-box;overflow:hidden;}
   /* classic: .gm > .bcol(strip, board, legend) + .scol */
-  .gm{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(380px, 38vw, 520px);grid-template-rows:minmax(0,1fr);grid-template-areas:"board side";gap:10px 16px;align-items:stretch;}
+  .gm{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px, 26vw, 360px);grid-template-rows:minmax(0,1fr);grid-template-areas:"board side";gap:10px 16px;align-items:stretch;}
   .bcol{display:contents;}
-  .gm .board{grid-area:board;align-self:center;justify-self:center;width:min(100%, calc(100vh - 84px), 760px);margin:0;}
+  .gm .board{grid-area:board;align-self:center;justify-self:center;margin:0;}
   .gm .strip,.gm .lg{display:none;}
   .gm .scol{grid-area:side;min-height:0;overflow:auto;scrollbar-width:none;align-self:stretch;}
   .gm .scol::-webkit-scrollbar{display:none;}
   /* midnight: .game > .score, .boardcard, .lg.legend, .rail */
-  .game{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(380px, 38vw, 520px);grid-template-rows:minmax(0,1fr);grid-template-areas:"board rail";gap:10px 16px;align-items:stretch;}
+  .game{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px, 26vw, 360px);grid-template-rows:minmax(0,1fr);grid-template-areas:"board rail";gap:10px 16px;align-items:stretch;}
   .game .boardcard{grid-area:board;display:flex;align-items:center;justify-content:center;min-height:0;}
-  .game .board{width:min(100%, calc(100vh - 84px), 760px);margin:0;}
+  .game .board{margin:0;}
   .game .score,.game .lg.legend{display:none;}
   .game .rail{grid-area:rail;min-height:0;overflow:auto;scrollbar-width:none;align-self:stretch;}
   .game .rail::-webkit-scrollbar{display:none;}
   /* atlas: .shell > .mapwrap + .side */
-  .shell{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(380px, 38vw, 520px);gap:16px;align-items:stretch;}
+  .shell{height:100%;display:grid;grid-template-columns:minmax(0,1fr) clamp(300px, 26vw, 360px);gap:16px;align-items:stretch;}
   .mapwrap{min-width:0;min-height:0;overflow:auto;scrollbar-width:none;}
   .mapwrap::-webkit-scrollbar{display:none;}
   .mapwrap .legend,.mapwrap .logbook{display:none;}
   .side{min-height:0;overflow:auto;scrollbar-width:none;display:grid;grid-template-columns:1fr 1fr;gap:8px;align-content:start;}
   .side::-webkit-scrollbar{display:none;}
+  .side .card{padding:8px;}
   .side .passport .chips,.side .passport .stampPos{display:none;}
   .side .passport .stamp{padding:4px 6px;margin:4px 0;}
   .side .passport .stampNet{font-size:12px;}
@@ -951,6 +952,25 @@ body.emote-cursed::after{content:'';position:fixed;inset:0;pointer-events:none;z
   .panel.players #rs{grid-column:1 / -1;}
   .panel.ro{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
   .panel .pimg{width:44px;height:44px;object-fit:cover;border-radius:8px;margin:0 0 6px;}
+  /* property squares: full-bleed card art + readable text over a gradient */
+  .board{grid-template-columns:minmax(0,1.35fr) repeat(11,minmax(0,1fr)) minmax(0,1.35fr);grid-template-rows:minmax(0,1.35fr) repeat(11,minmax(0,1fr)) minmax(0,1.35fr);aspect-ratio:1.2 / 1;width:100%;height:auto;max-width:none;max-height:calc(100vh - 72px);}
+  .board .mid{min-width:0;min-height:0;overflow:hidden;}
+  .board .mid .log{min-height:0;overflow:auto;scrollbar-width:none;}
+  .board .mid .log::-webkit-scrollbar{display:none;}
+  .sq{min-width:0;min-height:0;overflow:hidden;}
+  .sq .ph{inset:0;width:100%;height:100%;margin:0;opacity:1;}
+  .sq b,.sq span,.sq small,.sq .ob,.sq .fr,.sq .hs,.sq .gb,.sq .tk,.sq .rt{position:relative;z-index:3;}
+  .sq b{font-size:clamp(9px,3.4cqw,18px);line-height:1;text-shadow:0 1px 3px #000;}
+  .sq span{font-size:clamp(7px,2.4cqw,14px);line-height:1.15;text-shadow:0 1px 3px #000,0 0 6px rgba(0,0,0,.8);}
+  .sq small{font-size:clamp(6px,1.9cqw,11px);text-shadow:0 1px 2px #000;}
+  .sq:has(.ph):after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 25%,rgba(0,0,0,.75));z-index:1;pointer-events:none;}
+  .sq:has(.ph) b{display:none;}
+  .sq:has(.ph) span,.sq:has(.ph) small{color:#fff;}
+  .sq:has(.ph) .gb,.sq:has(.ph) .ob,.sq:has(.ph) .fr,.sq:has(.ph) .hs,.sq:has(.ph) .rt{z-index:4;}
+  .sq:has(.ph) .tk{z-index:5;}
+  /* selected-square detail card: bigger image and text, still an overlay */
+  .scol .sqp{width:360px;font-size:13px;}
+  .scol .sqp .pimg{width:96px;height:96px;float:none;margin:0 0 8px;border-radius:10px;}
   /* the lobby hero is decorative — hide it on desktop so the lobby fits too */
   .hero,.herowrap{display:none;}
   /* lobbies: players in two columns so everyone fits without scrolling */
